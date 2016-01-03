@@ -43,14 +43,14 @@ class OutletCurrentSchedule(object):
             # We're still waiting for the initial delay to finish
             self._next_schedule_nr = 0
             self._sequence_rampup = True
-            self._time_to_next_schedule = value
+            self._minutes_to_next_schedule = value
         else:
             self._next_schedule_nr = (data[0] & 0x7f)
             self._sequence_rampup = False
-            self._time_to_next_schedule = (value & 0x3FFF)
+            self._minutes_to_next_schedule = (value & 0x3FFF)
 
         self._switched_it_on = (value & 0x8000 == 0x8000)
-        self._sequence_done = (self._time_to_next_schedule == 0)
+        self._sequence_done = (self._minutes_to_next_schedule == 0)
 
     @property
     def timing_error(self):
@@ -72,8 +72,8 @@ class OutletCurrentSchedule(object):
         return self._switched_it_on
 
     @property
-    def time_to_next_schedule(self):
-        return self._time_to_next_schedule
+    def minutes_to_next_schedule(self):
+        return self._minutes_to_next_schedule
 
     @property
     def sequence_done(self):

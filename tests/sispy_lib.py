@@ -55,11 +55,11 @@ def test_property_defaults(sispy):
     assert sispy.time_in_GMT is False
 
 
-def _test_outlet_current_schedule(current_schedule, sispy, timing_error=False, switched_it_on=False, time_to_next_schedule=2,
+def _test_outlet_current_schedule(current_schedule, sispy, timing_error=False, switched_it_on=False, minutes_to_next_schedule=2,
                                   next_schedule_nr=2, sequence_rampup=False, sequence_done=False):
     assert current_schedule.timing_error == timing_error
     assert current_schedule.switched_it_on == switched_it_on
-    assert current_schedule.time_to_next_schedule == time_to_next_schedule
+    assert current_schedule.minutes_to_next_schedule == minutes_to_next_schedule
     assert current_schedule.next_schedule_nr == next_schedule_nr
     assert current_schedule.sequence_rampup == sequence_rampup
     assert current_schedule.sequence_done == sequence_done
@@ -75,7 +75,7 @@ def test_outlet_current_schedule_ok_off(sispy, outlet_current_schedule_data_ok_o
 
 def test_outlet_current_schedule_ok_off_long_time(sispy, outlet_current_schedule_data_ok_off_long_time):
     current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_long_time, sispy)
-    _test_outlet_current_schedule(current_schedule, sispy, time_to_next_schedule=12290)
+    _test_outlet_current_schedule(current_schedule, sispy, minutes_to_next_schedule=12290)
 
 
 def test_outlet_current_schedule_error_off(sispy, outlet_current_schedule_data_error_off):
@@ -95,6 +95,6 @@ def test_outlet_current_schedule_ok_off_rampup(sispy, outlet_current_schedule_da
 
 def test_outlet_current_schedule_ok_off_done(sispy, outlet_current_schedule_data_ok_off_done):
     current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_done, sispy)
-    _test_outlet_current_schedule(current_schedule, sispy, sequence_done=True, time_to_next_schedule=0, next_schedule_nr=3)
+    _test_outlet_current_schedule(current_schedule, sispy, sequence_done=True, minutes_to_next_schedule=0, next_schedule_nr=3)
 
 # vim: set ai tabstop=4 shiftwidth=4 expandtab :
