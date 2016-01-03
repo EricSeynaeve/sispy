@@ -1,4 +1,6 @@
 *.pyc
+*.swp
+*~
 .cache
 tests/.coverage
 tests/__pycache__
