@@ -79,5 +79,4 @@ class OutletCurrentSchedule(object):
     def sequence_done(self):
         return self._sequence_done
 
-
 # vim: set ai tabstop=4 shiftwidth=4 expandtab :

@@ -12,32 +12,32 @@ def sispy():
 
 
 @pytest.fixture
-def outlet_current_schedule_data_ok_off(sispy):
+def outlet_current_schedule_data_ok_off():
     return bytearray([0x01, 0x2, 0x0])
 
 
 @pytest.fixture
-def outlet_current_schedule_data_ok_off_long_time(sispy):
+def outlet_current_schedule_data_ok_off_long_time():
     return bytearray([0x01, 0x2, 0x30])
 
 
 @pytest.fixture
-def outlet_current_schedule_data_ok_on(sispy):
+def outlet_current_schedule_data_ok_on():
     return bytearray([0x01, 0x2, 0x80])
 
 
 @pytest.fixture
-def outlet_current_schedule_data_error_off(sispy):
+def outlet_current_schedule_data_error_off():
     return bytearray([0x81, 0x2, 0x0])
 
 
 @pytest.fixture
-def outlet_current_schedule_data_ok_off_rampup(sispy):
+def outlet_current_schedule_data_ok_off_rampup():
     return bytearray([0x10, 0x2, 0x0])
 
 
 @pytest.fixture
-def outlet_current_schedule_data_ok_off_done(sispy):
+def outlet_current_schedule_data_ok_off_done():
     return bytearray([0x02, 0x0, 0x0])
 
 
