@@ -2,8 +2,15 @@
 
 from SisPy.lib import SisPy
 from SisPy.lib import OutletCurrentSchedule
+from SisPy.lib import Schedule
 
 import pytest
+import time
+
+# test data was obtained in CET
+time.altzone = -7200
+time.timezone = -3600
+time.daylight = 0
 
 
 @pytest.fixture
@@ -41,6 +48,16 @@ def outlet_current_schedule_data_ok_off_done():
     return bytearray([0x02, 0x0, 0x0])
 
 
+@pytest.fixture
+def outlet_schedule_data():
+    return bytearray([116, 152, 126, 86, 3, 0, 2, 128, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 1, 0])
+
+
+@pytest.fixture
+def outlet_schedule_data_vanilla():
+    return bytearray([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+
+
 def test_mock(sispy):
     assert isinstance(sispy, SisPy)
 
@@ -50,9 +67,6 @@ def test_property_defaults(sispy):
     assert sispy.count_outlets_from_1 is True
     sispy.count_outlets_from_1 = False
     assert sispy.count_outlets_from_1 is False
-    assert sispy.time_in_GMT is True
-    sispy.time_in_GMT = False
-    assert sispy.time_in_GMT is False
 
 
 def _test_outlet_current_schedule(current_schedule, sispy, timing_error=False, switched_it_on=False, minutes_to_next_schedule=2,
@@ -96,5 +110,45 @@ def test_outlet_current_schedule_ok_off_rampup(sispy, outlet_current_schedule_da
 def test_outlet_current_schedule_ok_off_done(sispy, outlet_current_schedule_data_ok_off_done):
     current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_done, sispy)
     _test_outlet_current_schedule(current_schedule, sispy, sequence_done=True, minutes_to_next_schedule=0, next_schedule_nr=3)
+
+
+def test_outlet_schedule(sispy, outlet_schedule_data):
+    schedule = Schedule(outlet_schedule_data, sispy)
+
+    # time.strptime doesn't take the timezone information into account. It just assumes it's alwasy in UTC
+    # Need to compensate for this in the tests
+    assert schedule.time_activated == time.strptime('2015-12-26 13:39:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.rampup_minutes == 1
+    assert schedule.start_time == time.strptime('2015-12-26 13:40:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.periodic is True
+    assert schedule.periodicity_minutes == 5
+    assert schedule.schedule_minutes is None
+    assert schedule.end_time == time.strptime('2999-12-31 23:59:59 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert len(schedule.entries) == 2
+
+    entry1 = schedule.entries[0]
+    assert entry1.switch_on is False
+    assert entry1.minutes_to_next_schedule == 3
+    assert entry1.start_time == time.strptime('2015-12-26 13:40:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert entry1.end_time == time.strptime('2015-12-26 13:43:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+
+    entry2 = schedule.entries[1]
+    assert entry2.switch_on is True
+    assert entry2.minutes_to_next_schedule == 2
+    assert entry2.start_time == time.strptime('2015-12-26 13:43:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert entry2.end_time == time.strptime('2015-12-26 13:45:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+
+
+def test_outlet_schedule_vanilla(sispy, outlet_schedule_data_vanilla):
+    schedule = Schedule(outlet_schedule_data_vanilla, sispy)
+
+    assert schedule.time_activated == time.strptime('1970-01-01 00:00:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.rampup_minutes == 0
+    assert schedule.start_time == time.strptime('1970-01-01 00:00:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.periodic is False
+    assert schedule.periodicity_minutes is None
+    assert schedule.schedule_minutes == 0
+    assert schedule.end_time == time.strptime('1970-01-01 00:00:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert len(schedule.entries) == 0
 
 # vim: set ai tabstop=4 shiftwidth=4 expandtab :
