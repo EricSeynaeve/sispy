@@ -3,9 +3,6 @@
 import struct
 import time
 
-time.tzset()
-
-
 class SisPy(object):
     def __init__(self):
         self._nr_outlets = 4
@@ -121,8 +118,6 @@ class Schedule(object):
 
         self._epoch_activated = struct.unpack('<L', data[0:4])[0]
         self._rampup_minutes = struct.unpack('<H', data[36:38])[0]
-        if self._rampup_minutes == 0x3FFF:
-            self._rampup_minutes = 0
 
         for i in range(4, 36, 2):
             value = struct.unpack('<H', data[i:i + 2])[0]
@@ -133,6 +128,7 @@ class Schedule(object):
 
         if len(self._entries) == 0:
             self._periodic = False
+            self._rampup_minutes = 0
 
     def _epoch_to_time(self, epoch):
         return time.gmtime(epoch)
