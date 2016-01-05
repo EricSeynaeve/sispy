@@ -121,12 +121,18 @@ class Schedule(object):
 
         self._epoch_activated = struct.unpack('<L', data[0:4])[0]
         self._rampup_minutes = struct.unpack('<H', data[36:38])[0]
+        if self._rampup_minutes == 0x3FFF:
+            self._rampup_minutes = 0
+
         for i in range(4, 36, 2):
             value = struct.unpack('<H', data[i:i + 2])[0]
             if value == 0x0:
                 self._periodic = False
             elif value != 0x3FFF:
                 self._entries.append(ScheduleItem(data[i:i + 2], self, (i - 4) / 2))
+
+        if len(self._entries) == 0:
+            self._periodic = False
 
     def _epoch_to_time(self, epoch):
         return time.gmtime(epoch)
@@ -175,7 +181,7 @@ class Schedule(object):
         if self.periodic is True:
             return time.strptime('2999-12-31 23:59:59 UTC', '%Y-%m-%d %H:%M:%S %Z')
         else:
-            return self._epoch_to_time(self._start_epoch() + self.schedule_minutes)
+            return self._epoch_to_time(self._start_epoch() + self.schedule_minutes * 60)
 
     @property
     def entries(self):

@@ -54,6 +54,18 @@ def outlet_schedule_data():
 
 
 @pytest.fixture
+def outlet_schedule_data_non_periodic():
+    return bytearray([116, 152, 126, 86, 3, 0, 2, 128, 0, 0, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 1, 0])
+
+
+# FIXME: see if the device indeed stores it's time information as UTC
+# FIXME: see if this is indeed the sequence on reset from gui
+@pytest.fixture
+def outlet_schedule_data_reset():
+    return bytearray([116, 152, 126, 86, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63, 255, 63])
+
+
+@pytest.fixture
 def outlet_schedule_data_vanilla():
     return bytearray([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
@@ -137,6 +149,48 @@ def test_outlet_schedule(sispy, outlet_schedule_data):
     assert entry2.minutes_to_next_schedule == 2
     assert entry2.start_time == time.strptime('2015-12-26 13:43:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert entry2.end_time == time.strptime('2015-12-26 13:45:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+
+
+def test_outlet_schedule_non_periodic(sispy, outlet_schedule_data_non_periodic):
+    schedule = Schedule(outlet_schedule_data_non_periodic, sispy)
+
+    # time.strptime doesn't take the timezone information into account. It just assumes it's alwasy in UTC
+    # Need to compensate for this in the tests
+    assert schedule.time_activated == time.strptime('2015-12-26 13:39:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.rampup_minutes == 1
+    assert schedule.start_time == time.strptime('2015-12-26 13:40:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.periodic is False
+    assert schedule.periodicity_minutes is None
+    assert schedule.schedule_minutes == 5
+    assert schedule.end_time == time.strptime('2015-12-26 13:45:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert len(schedule.entries) == 2
+
+    entry1 = schedule.entries[0]
+    assert entry1.switch_on is False
+    assert entry1.minutes_to_next_schedule == 3
+    assert entry1.start_time == time.strptime('2015-12-26 13:40:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert entry1.end_time == time.strptime('2015-12-26 13:43:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+
+    entry2 = schedule.entries[1]
+    assert entry2.switch_on is True
+    assert entry2.minutes_to_next_schedule == 2
+    assert entry2.start_time == time.strptime('2015-12-26 13:43:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert entry2.end_time == time.strptime('2015-12-26 13:45:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+
+
+def test_outlet_schedule_periodic_reset(sispy, outlet_schedule_data_reset):
+    schedule = Schedule(outlet_schedule_data_reset, sispy)
+
+    # time.strptime doesn't take the timezone information into account. It just assumes it's alwasy in UTC
+    # Need to compensate for this in the tests
+    assert schedule.time_activated == time.strptime('2015-12-26 13:39:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.rampup_minutes == 0
+    assert schedule.start_time == time.strptime('2015-12-26 13:39:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.periodic is False
+    assert schedule.periodicity_minutes is None
+    assert schedule.schedule_minutes == 0
+    assert schedule.end_time == time.strptime('2015-12-26 13:39:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert len(schedule.entries) == 0
 
 
 def test_outlet_schedule_vanilla(sispy, outlet_schedule_data_vanilla):
