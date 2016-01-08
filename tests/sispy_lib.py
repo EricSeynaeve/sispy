@@ -15,7 +15,7 @@ time.daylight = 0
 
 @pytest.fixture
 def device():
-    class _device:
+    class MockDevice:
         def in_type(self, value):
             return (value & (1 << 7)) == (1 << 7)
 
@@ -33,7 +33,7 @@ def device():
             if value == 1 and self.in_type(request_type):
                 assert data_or_length == 4
                 return id_data()
-    return _device()
+    return MockDevice()
 
 
 @pytest.fixture
