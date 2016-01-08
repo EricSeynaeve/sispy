@@ -17,7 +17,7 @@ class SisPy(object):
         self._nr_outlets = 4
         self._count_outlets_from_1 = True
 
-    def _get_device(self): # pragma: no cover
+    def _get_device(self):  # pragma: no cover
         devs = usb.core.find(find_all=True, idVendor=0x04b4)
         if devs is None:
             print("No Energenie products found")
