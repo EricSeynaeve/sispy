@@ -14,8 +14,37 @@ time.daylight = 0
 
 
 @pytest.fixture
-def sispy():
-    return SisPy()
+def device():
+    class _device:
+        def in_type(self, value):
+            return (value & (1 << 7)) == (1 << 7)
+
+        def ctrl_transfer(self, request_type, request, value=0, index=0, data_or_length=None, timeout=None):
+            assert (request_type & (1 << 5 | 1)) == (1 << 5 | 1)
+            if self.in_type(request_type) is True:
+                assert request == 0x1
+            else:
+                assert request == 0x9
+            assert (value & (3 << 8)) == (3 << 8)
+            value = value & (~ (3 << 8))
+            assert index == 0
+            assert timeout == 500
+
+            if value == 1 and self.in_type(request_type):
+                assert data_or_length == 4
+                return id_data()
+    return _device()
+
+
+@pytest.fixture
+def sispy(device):
+    class MockSisPy(SisPy):
+        def __init__(self):
+            SisPy.__init__(self)
+
+        def _get_device(self):
+            return device
+    return MockSisPy()
 
 
 @pytest.fixture
@@ -68,11 +97,16 @@ def outlet_schedule_data_vanilla():
     return bytearray([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
 
+def id_data():
+    return bytearray([0x1, 0x2, 0x3, 0x4])
+
+
 def test_mock(sispy):
     assert isinstance(sispy, SisPy)
 
 
 def test_property_defaults(sispy):
+    assert sispy.id == 67305985
     assert sispy.nr_outlets == 4
     assert sispy.count_outlets_from_1 is True
     sispy.count_outlets_from_1 = False
@@ -158,7 +192,7 @@ def test_outlet_schedule_non_periodic(sispy, outlet_schedule_data_non_periodic):
     assert schedule.rampup_minutes == 1
     assert schedule.start_time == time.strptime('2016-01-05 17:11:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule.periodic is False
-    assert schedule.periodicity_minutes == None
+    assert schedule.periodicity_minutes is None
     assert schedule.schedule_minutes == 5
     assert schedule.end_time == time.strptime('2016-01-05 17:16:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert len(schedule.entries) == 2

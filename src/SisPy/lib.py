@@ -2,11 +2,38 @@
 
 import struct
 import time
+import usb
+
 
 class SisPy(object):
+    ID = 1
+    OUTLET_STATUS = 3
+    OUTLET_SCHEDULES = 4
+    OUTLET_CURRENT_SCHEDULE = 5
+
     def __init__(self):
+        self._dev = self._get_device()
+        self._id = self._usb_read(SisPy.ID)
         self._nr_outlets = 4
         self._count_outlets_from_1 = True
+
+    def _get_device(self): # pragma: no cover
+        devs = usb.core.find(find_all=True, idVendor=0x04b4)
+        if devs is None:
+            print("No Energenie products found")
+            sys.exit(0)
+        return devs.next()
+
+    def _usb_read(self, command, outlet_nr=None):
+        request_type = 0xa1
+        request = 0x01
+        if command == SisPy.ID:
+            data = self._dev.ctrl_transfer(request_type, request, 0x0301, 0, 4, 500)
+            return struct.unpack('<L', data)[0]
+
+    @property
+    def id(self):
+        return self._id
 
     @property
     def nr_outlets(self):
