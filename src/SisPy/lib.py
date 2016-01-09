@@ -14,8 +14,9 @@ class SisPy(object):
     def __init__(self):
         self._dev = self._get_device()
         self._id = self._usb_read(SisPy.ID)
-        self._nr_outlets = 4
-        self._count_outlets_from_1 = True
+        self._outlets = []
+        for i in range(4):
+            self._outlets.append(Outlet(i, self))
 
     def _get_device(self):  # pragma: no cover
         devs = usb.core.find(find_all=True, idVendor=0x04b4)
@@ -30,6 +31,9 @@ class SisPy(object):
         if command == SisPy.ID:
             data = self._dev.ctrl_transfer(request_type, request, 0x0301, 0, 4, 500)
             return struct.unpack('<L', data)[0]
+        if command == SisPy.OUTLET_STATUS:
+            data = self._dev.ctrl_transfer(request_type, request, 0x0303 + outlet_nr * 3, 0, 1, 500)
+            return data
 
     @property
     def id(self):
@@ -37,15 +41,24 @@ class SisPy(object):
 
     @property
     def nr_outlets(self):
-        return self._nr_outlets
+        return len(self._outlets)
 
     @property
-    def count_outlets_from_1(self):
-        return self._count_outlets_from_1
+    def outlets(self):
+        return self._outlets
 
-    @count_outlets_from_1.setter
-    def count_outlets_from_1(self, b):
-        self._count_outlets_from_1 = b
+
+class Outlet(object):
+    def __init__(self, nr, syspi):
+        self._nr = nr
+        self._syspi = syspi
+
+    @property
+    def switched_on(self):
+        print self._nr
+        data = self._syspi._usb_read(SisPy.OUTLET_STATUS, self._nr)
+        print data
+        return data == 0x03
 
 
 class OutletCurrentSchedule(object):
@@ -80,10 +93,7 @@ class OutletCurrentSchedule(object):
 
     @property
     def next_schedule_nr(self):
-        if self._sispy.count_outlets_from_1 is True:
-            return self._next_schedule_nr + 1
-        else:
-            return self._next_schedule_nr
+        return self._next_schedule_nr
 
     @property
     def switched_it_on(self):

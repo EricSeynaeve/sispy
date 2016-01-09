@@ -3,6 +3,7 @@
 from SisPy.lib import SisPy
 from SisPy.lib import OutletCurrentSchedule
 from SisPy.lib import Schedule
+from SisPy.lib import Outlet
 
 import pytest
 import time
@@ -16,23 +17,41 @@ time.daylight = 0
 @pytest.fixture
 def device():
     class MockDevice:
+        def __init__(self):
+            self.outlet_on = [True, False, False, True]
+
         def in_type(self, value):
             return (value & (1 << 7)) == (1 << 7)
+
+        def get_outlet_status(self, outlet_nr):
+            assert outlet_nr >= 0
+            assert outlet_nr < 4
+
+            if self.outlet_on[outlet_nr] is True:
+                return 0x03
+            else:
+                return 0x00
 
         def ctrl_transfer(self, request_type, request, value=0, index=0, data_or_length=None, timeout=None):
             assert (request_type & (1 << 5 | 1)) == (1 << 5 | 1)
             if self.in_type(request_type) is True:
-                assert request == 0x1
+                assert request == 1
             else:
-                assert request == 0x9
+                assert request == 8 | 1
             assert (value & (3 << 8)) == (3 << 8)
             value = value & (~ (3 << 8))
             assert index == 0
             assert timeout == 500
 
+            # get id
             if value == 1 and self.in_type(request_type):
                 assert data_or_length == 4
                 return id_data()
+            # get status first outlet
+            if (value in (3, 6, 9, 12)) and self.in_type(request_type):
+                assert data_or_length == 1
+                return self.get_outlet_status((value - 3) / 3)
+
     return MockDevice()
 
 
@@ -49,31 +68,54 @@ def sispy(device):
 
 @pytest.fixture
 def outlet_current_schedule_data_ok_off():
+    """Executing the first schedule (second schedule is the next one).
+       Time it will still execute is 2 minutes.
+       This schedule set the outlet off at it's start (status now can be different due to override)
+    """
     return bytearray([0x01, 0x2, 0x0])
 
 
 @pytest.fixture
 def outlet_current_schedule_data_ok_off_long_time():
+    """Executing the first schedule (second schedule is the next one).
+       Time it will still execute is a lot (0x3002).
+       This schedule set the outlet off at it's start (status now can be different due to override).
+    """
     return bytearray([0x01, 0x2, 0x30])
 
 
 @pytest.fixture
 def outlet_current_schedule_data_ok_on():
+    """Executing the first schedule (second schedule is the next one).
+       Time it will still execute is 2 minutes.
+       This schedule set the outlet on at it's start (status now can be different due to override).
+    """
     return bytearray([0x01, 0x2, 0x80])
 
 
 @pytest.fixture
 def outlet_current_schedule_data_error_off():
+    """Executing the first schedule (second schedule is the next one).
+       Time it will still execute is 2 minutes.
+       This schedule set the outlet off at it's start (status now can be different due to override).
+       A timer error occured while executing this schedule (e.g. the power was off for a very long time).
+    """
     return bytearray([0x81, 0x2, 0x0])
 
 
 @pytest.fixture
 def outlet_current_schedule_data_ok_off_rampup():
+    """Still waiting to start the schedules (first schedule is the next one).
+       Time it will still wait is 2 minutes.
+    """
     return bytearray([0x10, 0x2, 0x0])
 
 
 @pytest.fixture
 def outlet_current_schedule_data_ok_off_done():
+    """All schedules were executed.
+       This also means that no looping was requested.
+    """
     return bytearray([0x02, 0x0, 0x0])
 
 
@@ -108,22 +150,32 @@ def test_mock(sispy):
 def test_property_defaults(sispy):
     assert sispy.id == 67305985
     assert sispy.nr_outlets == 4
-    assert sispy.count_outlets_from_1 is True
-    sispy.count_outlets_from_1 = False
-    assert sispy.count_outlets_from_1 is False
+    assert len(sispy.outlets) == sispy.nr_outlets
+    assert isinstance(sispy.outlets[0], Outlet)
+
+
+def test_outlets_status(sispy):
+    assert sispy.outlets[0].switched_on is True
+    assert sispy.outlets[1].switched_on is False
+    assert sispy.outlets[2].switched_on is False
+    assert sispy.outlets[3].switched_on is True
+
+
+def test_outlet_status(sispy):
+    outlet = Outlet(0, sispy)
+    assert outlet.switched_on is True
+    outlet = Outlet(2, sispy)
+    assert outlet.switched_on is False
 
 
 def _test_outlet_current_schedule(current_schedule, sispy, timing_error=False, switched_it_on=False, minutes_to_next_schedule=2,
-                                  next_schedule_nr=2, sequence_rampup=False, sequence_done=False):
+                                  next_schedule_nr=1, sequence_rampup=False, sequence_done=False):
     assert current_schedule.timing_error == timing_error
     assert current_schedule.switched_it_on == switched_it_on
     assert current_schedule.minutes_to_next_schedule == minutes_to_next_schedule
     assert current_schedule.next_schedule_nr == next_schedule_nr
     assert current_schedule.sequence_rampup == sequence_rampup
     assert current_schedule.sequence_done == sequence_done
-
-    sispy.count_outlets_from_1 = False
-    assert current_schedule.next_schedule_nr == next_schedule_nr - 1
 
 
 def test_outlet_current_schedule_ok_off(sispy, outlet_current_schedule_data_ok_off):
@@ -148,12 +200,12 @@ def test_outlet_current_schedule_ok_on(sispy, outlet_current_schedule_data_ok_on
 
 def test_outlet_current_schedule_ok_off_rampup(sispy, outlet_current_schedule_data_ok_off_rampup):
     current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_rampup, sispy)
-    _test_outlet_current_schedule(current_schedule, sispy, sequence_rampup=True, next_schedule_nr=1)
+    _test_outlet_current_schedule(current_schedule, sispy, sequence_rampup=True, next_schedule_nr=0)
 
 
 def test_outlet_current_schedule_ok_off_done(sispy, outlet_current_schedule_data_ok_off_done):
     current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_done, sispy)
-    _test_outlet_current_schedule(current_schedule, sispy, sequence_done=True, minutes_to_next_schedule=0, next_schedule_nr=3)
+    _test_outlet_current_schedule(current_schedule, sispy, sequence_done=True, minutes_to_next_schedule=0, next_schedule_nr=2)
 
 
 def test_outlet_schedule(sispy, outlet_schedule_data):
