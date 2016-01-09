@@ -55,23 +55,23 @@ class SisPy(object):
 
 
 class Outlet(object):
-    def __init__(self, nr, syspi):
+    def __init__(self, nr, sispy):
         self._nr = nr
-        self._syspi = syspi
+        self._sispy = sispy
 
     @property
     def switched_on(self):
-        data = self._syspi._usb_read(SisPy.OUTLET_STATUS, self._nr)
+        data = self._sispy._usb_read(SisPy.OUTLET_STATUS, self._nr)
         return data == 0x03
 
     @property
     def schedule(self):
-        data = self._syspi._usb_read(SisPy.OUTLET_SCHEDULE, self._nr)
+        data = self._sispy._usb_read(SisPy.OUTLET_SCHEDULE, self._nr)
         return OutletSchedule(data)
 
     @property
     def current_schedule(self):
-        data = self._syspi._usb_read(SisPy.OUTLET_CURRENT_SCHEDULE, self._nr)
+        data = self._sispy._usb_read(SisPy.OUTLET_CURRENT_SCHEDULE, self._nr)
         return OutletCurrentSchedule(data)
 
 
