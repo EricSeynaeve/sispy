@@ -55,9 +55,7 @@ class Outlet(object):
 
     @property
     def switched_on(self):
-        print self._nr
         data = self._syspi._usb_read(SisPy.OUTLET_STATUS, self._nr)
-        print data
         return data == 0x03
 
 
