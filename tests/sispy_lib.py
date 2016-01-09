@@ -47,7 +47,7 @@ def device():
             if value == 1 and self.in_type(request_type):
                 assert data_or_length == 4
                 return id_data()
-            # get status first outlet
+            # get status outlet
             if (value in (3, 6, 9, 12)) and self.in_type(request_type):
                 assert data_or_length == 1
                 return self.get_outlet_status((value - 3) / 3)
