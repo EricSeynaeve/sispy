@@ -34,6 +34,9 @@ class SisPy(object):
         if command == SisPy.OUTLET_STATUS:
             data = self._dev.ctrl_transfer(request_type, request, 0x0303 + outlet_nr * 3, 0, 1, 500)
             return data
+        if command == SisPy.OUTLET_CURRENT_SCHEDULE:
+            data = self._dev.ctrl_transfer(request_type, request, 0x0305 + outlet_nr * 3, 0, 3, 500)
+            return data
 
     @property
     def id(self):
@@ -57,6 +60,11 @@ class Outlet(object):
     def switched_on(self):
         data = self._syspi._usb_read(SisPy.OUTLET_STATUS, self._nr)
         return data == 0x03
+
+    @property
+    def current_schedule(self):
+        data = self._syspi._usb_read(SisPy.OUTLET_CURRENT_SCHEDULE, self._nr)
+        return OutletCurrentSchedule(data, self._syspi)
 
 
 class OutletCurrentSchedule(object):

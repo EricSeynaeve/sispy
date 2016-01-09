@@ -51,6 +51,18 @@ def device():
             if (value in (3, 6, 9, 12)) and self.in_type(request_type):
                 assert data_or_length == 1
                 return self.get_outlet_status((value - 3) / 3)
+            # get current schedule outlet
+            if (value in (5, 8, 11, 14)) and self.in_type(request_type):
+                assert data_or_length == 3
+                outlet = (value - 5) / 3
+                if outlet == 0:
+                    return outlet_current_schedule_data_ok_off()
+                if outlet == 1:
+                    return outlet_current_schedule_data_ok_on()
+                if outlet == 2:
+                    return outlet_current_schedule_data_ok_off_rampup()
+                if outlet == 3:
+                    return outlet_current_schedule_data_ok_off_done()
 
     return MockDevice()
 
@@ -71,6 +83,8 @@ def outlet_current_schedule_data_ok_off():
     """Executing the first schedule (second schedule is the next one).
        Time it will still execute is 2 minutes.
        This schedule set the outlet off at it's start (status now can be different due to override)
+
+       This data is also used to mock the current schedule of outlet 0.
     """
     return bytearray([0x01, 0x2, 0x0])
 
@@ -80,6 +94,8 @@ def outlet_current_schedule_data_ok_off_long_time():
     """Executing the first schedule (second schedule is the next one).
        Time it will still execute is a lot (0x3002).
        This schedule set the outlet off at it's start (status now can be different due to override).
+
+       This data is also used to mock the current schedule of outlet 1.
     """
     return bytearray([0x01, 0x2, 0x30])
 
@@ -89,6 +105,8 @@ def outlet_current_schedule_data_ok_on():
     """Executing the first schedule (second schedule is the next one).
        Time it will still execute is 2 minutes.
        This schedule set the outlet on at it's start (status now can be different due to override).
+
+       This data is also used to mock the current schedule of outlet 2.
     """
     return bytearray([0x01, 0x2, 0x80])
 
@@ -99,6 +117,8 @@ def outlet_current_schedule_data_error_off():
        Time it will still execute is 2 minutes.
        This schedule set the outlet off at it's start (status now can be different due to override).
        A timer error occured while executing this schedule (e.g. the power was off for a very long time).
+
+       This data is also used to mock the current schedule of outlet 3.
     """
     return bytearray([0x81, 0x2, 0x0])
 
@@ -154,6 +174,13 @@ def test_property_defaults(sispy):
     assert isinstance(sispy.outlets[0], Outlet)
 
 
+def test_outlet_status(sispy):
+    outlet = Outlet(0, sispy)
+    assert outlet.switched_on is True
+    outlet = Outlet(2, sispy)
+    assert outlet.switched_on is False
+
+
 def test_outlets_status(sispy):
     assert sispy.outlets[0].switched_on is True
     assert sispy.outlets[1].switched_on is False
@@ -161,11 +188,11 @@ def test_outlets_status(sispy):
     assert sispy.outlets[3].switched_on is True
 
 
-def test_outlet_status(sispy):
-    outlet = Outlet(0, sispy)
-    assert outlet.switched_on is True
-    outlet = Outlet(2, sispy)
-    assert outlet.switched_on is False
+def test_outlets_current_schedule(sispy):
+    assert sispy.outlets[0].current_schedule._data == outlet_current_schedule_data_ok_off()
+    assert sispy.outlets[1].current_schedule._data == outlet_current_schedule_data_ok_on()
+    assert sispy.outlets[2].current_schedule._data == outlet_current_schedule_data_ok_off_rampup()
+    assert sispy.outlets[3].current_schedule._data == outlet_current_schedule_data_ok_off_done()
 
 
 def _test_outlet_current_schedule(current_schedule, sispy, timing_error=False, switched_it_on=False, minutes_to_next_schedule=2,
