@@ -67,7 +67,7 @@ class Outlet(object):
     @property
     def schedule(self):
         data = self._syspi._usb_read(SisPy.OUTLET_SCHEDULE, self._nr)
-        return Schedule(data, self._syspi)
+        return OutletSchedule(data, self._syspi)
 
     @property
     def current_schedule(self):
@@ -175,7 +175,7 @@ class OutletSchedule(object):
             if value == 0x0:
                 self._periodic = False
             elif value != 0x3FFF:
-                self._entries.append(ScheduleItem(data[i:i + 2], self, (i - 4) / 2))
+                self._entries.append(OutletScheduleItem(data[i:i + 2], self, (i - 4) / 2))
 
         if len(self._entries) == 0:
             self._periodic = False
