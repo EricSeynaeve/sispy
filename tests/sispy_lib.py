@@ -1,9 +1,10 @@
 #! /usr/bin/env python
 
 from SisPy.lib import SisPy
+from SisPy.lib import Outlet
 from SisPy.lib import OutletCurrentSchedule
 from SisPy.lib import OutletSchedule
-from SisPy.lib import Outlet
+from SisPy.lib import OutletScheduleItem
 
 import pytest
 import time
