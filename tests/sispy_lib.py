@@ -14,6 +14,10 @@ time.timezone = -3600
 time.daylight = 0
 
 
+#####
+# some mock objects to be able to inject test data
+#####
+
 @pytest.fixture
 def device():
     class MockDevice:
@@ -89,6 +93,10 @@ def sispy(device):
             return device
     return MockSisPy()
 
+
+####
+# data that we can use for injection
+####
 
 @pytest.fixture
 def outlet_current_schedule_data_ok_off():
@@ -175,9 +183,15 @@ def id_data():
     return bytearray([0x1, 0x2, 0x3, 0x4])
 
 
+####
+# Actual test code
+####
+
 def test_mock(sispy):
     assert isinstance(sispy, SisPy)
 
+
+# Test powersupply
 
 def test_property_defaults(sispy):
     assert sispy.id == 67305985
@@ -185,6 +199,8 @@ def test_property_defaults(sispy):
     assert len(sispy.outlets) == sispy.nr_outlets
     assert isinstance(sispy.outlets[0], Outlet)
 
+
+# Test outlet status
 
 def test_outlet_status(sispy):
     outlet = Outlet(0, sispy)
@@ -200,6 +216,8 @@ def test_outlets_status(sispy):
     assert sispy.outlets[3].switched_on is True
 
 
+# Test outlet schedule
+
 def test_outlets_schedule(sispy):
     assert sispy.outlets[0].schedule._data == outlet_schedule_data()
     assert sispy.outlets[1].schedule._data == outlet_schedule_data_vanilla()
@@ -213,6 +231,8 @@ def test_outlets_current_schedule(sispy):
     assert sispy.outlets[2].current_schedule._data == outlet_current_schedule_data_ok_off_rampup()
     assert sispy.outlets[3].current_schedule._data == outlet_current_schedule_data_ok_off_done()
 
+
+# test outlet current schedule class
 
 def _test_outlet_current_schedule(current_schedule, sispy, timing_error=False, switched_it_on=False, minutes_to_next_schedule=2,
                                   next_schedule_nr=1, sequence_rampup=False, sequence_done=False):
@@ -253,6 +273,8 @@ def test_outlet_current_schedule_ok_off_done(sispy, outlet_current_schedule_data
     current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_done, sispy)
     _test_outlet_current_schedule(current_schedule, sispy, sequence_done=True, minutes_to_next_schedule=0, next_schedule_nr=2)
 
+
+# test outlet schedule class
 
 def test_outlet_schedule(sispy, outlet_schedule_data):
     schedule = Schedule(outlet_schedule_data, sispy)
