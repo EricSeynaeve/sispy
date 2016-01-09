@@ -8,7 +8,7 @@ import usb
 class SisPy(object):
     ID = 1
     OUTLET_STATUS = 3
-    OUTLET_SCHEDULES = 4
+    OUTLET_SCHEDULE = 4
     OUTLET_CURRENT_SCHEDULE = 5
 
     def __init__(self):
@@ -33,6 +33,9 @@ class SisPy(object):
             return struct.unpack('<L', data)[0]
         if command == SisPy.OUTLET_STATUS:
             data = self._dev.ctrl_transfer(request_type, request, 0x0303 + outlet_nr * 3, 0, 1, 500)
+            return data
+        if command == SisPy.OUTLET_SCHEDULE:
+            data = self._dev.ctrl_transfer(request_type, request, 0x0304 + outlet_nr * 3, 0, 38, 500)
             return data
         if command == SisPy.OUTLET_CURRENT_SCHEDULE:
             data = self._dev.ctrl_transfer(request_type, request, 0x0305 + outlet_nr * 3, 0, 3, 500)
@@ -60,6 +63,11 @@ class Outlet(object):
     def switched_on(self):
         data = self._syspi._usb_read(SisPy.OUTLET_STATUS, self._nr)
         return data == 0x03
+
+    @property
+    def schedule(self):
+        data = self._syspi._usb_read(SisPy.OUTLET_SCHEDULE, self._nr)
+        return Schedule(data, self._syspi)
 
     @property
     def current_schedule(self):

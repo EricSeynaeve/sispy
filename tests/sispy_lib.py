@@ -51,6 +51,18 @@ def device():
             if (value in (3, 6, 9, 12)) and self.in_type(request_type):
                 assert data_or_length == 1
                 return self.get_outlet_status((value - 3) / 3)
+            # get full schedule outlet
+            if (value in (4, 7, 10, 13)) and self.in_type(request_type):
+                assert data_or_length == 38
+                outlet = (value - 4) / 3
+                if outlet == 0:
+                    return outlet_schedule_data()
+                if outlet == 1:
+                    return outlet_schedule_data_vanilla()
+                if outlet == 2:
+                    return outlet_schedule_data_non_periodic()
+                if outlet == 3:
+                    return outlet_schedule_data_reset()
             # get current schedule outlet
             if (value in (5, 8, 11, 14)) and self.in_type(request_type):
                 assert data_or_length == 3
@@ -186,6 +198,13 @@ def test_outlets_status(sispy):
     assert sispy.outlets[1].switched_on is False
     assert sispy.outlets[2].switched_on is False
     assert sispy.outlets[3].switched_on is True
+
+
+def test_outlets_schedule(sispy):
+    assert sispy.outlets[0].schedule._data == outlet_schedule_data()
+    assert sispy.outlets[1].schedule._data == outlet_schedule_data_vanilla()
+    assert sispy.outlets[2].schedule._data == outlet_schedule_data_non_periodic()
+    assert sispy.outlets[3].schedule._data == outlet_schedule_data_reset()
 
 
 def test_outlets_current_schedule(sispy):
