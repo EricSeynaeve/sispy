@@ -72,13 +72,12 @@ class Outlet(object):
     @property
     def current_schedule(self):
         data = self._syspi._usb_read(SisPy.OUTLET_CURRENT_SCHEDULE, self._nr)
-        return OutletCurrentSchedule(data, self._syspi)
+        return OutletCurrentSchedule(data)
 
 
 class OutletCurrentSchedule(object):
-    def __init__(self, data, sispy):
+    def __init__(self, data):
         self._data = data
-        self._sispy = sispy
 
         self._timing_error = (data[0] & 0x80 == 0x80)
         self._next_schedule_nr = (data[0] & 0x7f)

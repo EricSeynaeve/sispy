@@ -245,32 +245,32 @@ def _test_outlet_current_schedule(current_schedule, sispy, timing_error=False, s
 
 
 def test_outlet_current_schedule_ok_off(sispy, outlet_current_schedule_data_ok_off):
-    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off, sispy)
+    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off)
     _test_outlet_current_schedule(current_schedule, sispy)
 
 
 def test_outlet_current_schedule_ok_off_long_time(sispy, outlet_current_schedule_data_ok_off_long_time):
-    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_long_time, sispy)
+    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_long_time)
     _test_outlet_current_schedule(current_schedule, sispy, minutes_to_next_schedule=12290)
 
 
 def test_outlet_current_schedule_error_off(sispy, outlet_current_schedule_data_error_off):
-    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_error_off, sispy)
+    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_error_off)
     _test_outlet_current_schedule(current_schedule, sispy, timing_error=True)
 
 
 def test_outlet_current_schedule_ok_on(sispy, outlet_current_schedule_data_ok_on):
-    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_on, sispy)
+    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_on)
     _test_outlet_current_schedule(current_schedule, sispy, switched_it_on=True)
 
 
 def test_outlet_current_schedule_ok_off_rampup(sispy, outlet_current_schedule_data_ok_off_rampup):
-    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_rampup, sispy)
+    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_rampup)
     _test_outlet_current_schedule(current_schedule, sispy, sequence_rampup=True, next_schedule_nr=0)
 
 
 def test_outlet_current_schedule_ok_off_done(sispy, outlet_current_schedule_data_ok_off_done):
-    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_done, sispy)
+    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_done)
     _test_outlet_current_schedule(current_schedule, sispy, sequence_done=True, minutes_to_next_schedule=0, next_schedule_nr=2)
 
 
