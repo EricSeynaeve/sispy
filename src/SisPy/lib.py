@@ -122,6 +122,25 @@ class OutletCurrentSchedule(object):
 
 
 class OutletScheduleItem(object):
+    """Represents an item in the schedule by it's status at the start and the time before the next item is executed.
+
+       This can be read and manipulated in different ways:
+       - (start time, wait time in minutes)
+       - (end time, wait time in minutes)
+       - (start time, end time)
+
+       With a manipulation in one item, the remaining will be set accordingly.
+       Manipulating the start time will also change the end time.
+       Manipulating the wait time will also change the end time.
+       Manipulating the end time will also adjust the wait time.
+
+       E.g.
+       - if the start time is 09:30 and the wait time is set at 15 minutes, the end time will be 09:45.
+       - if the start time is 09:30 and the end time is set at 09:50, the wait time will be 20 minutes.
+       - if the wait time is 15 minutes and the start time is set at 09:15, the end time will be 09:30.
+
+       The start time will always take into account the wait times if the previous items (if any).
+    """
     def __init__(self, data, schedule, item_nr):
         self._data = data
         self._schedule = schedule
@@ -136,10 +155,18 @@ class OutletScheduleItem(object):
 
     @property
     def switch_on(self):
+        """True when the outlet was set on at the start of this schedule item. False other wise.
+
+           Beware, the current status could be different due to other manipulations after that time.
+        """
         return self._switch_on
 
     @property
     def minutes_to_next_schedule(self):
+        """The set wait time in minutes after this schedule item was started to start the next one.
+
+           This is always an int.
+        """
         return self._minutes_to_next_schedule
 
     def _start_epoch(self):
@@ -148,10 +175,18 @@ class OutletScheduleItem(object):
 
     @property
     def start_time(self):
+        """Start time of this schedule item.
+
+           This is a time UTC tuple.
+        """
         return self._schedule._epoch_to_time(self._start_epoch())
 
     @property
     def end_time(self):
+        """When this schedule item will end and the next one will start.
+
+           This is a time UTC tuple.
+        """
         return self._schedule._epoch_to_time(self._start_epoch() + self._minutes_to_next_schedule * 60)
 
 
