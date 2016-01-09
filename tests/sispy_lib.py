@@ -2,7 +2,7 @@
 
 from SisPy.lib import SisPy
 from SisPy.lib import OutletCurrentSchedule
-from SisPy.lib import Schedule
+from SisPy.lib import OutletSchedule
 from SisPy.lib import Outlet
 
 import pytest
@@ -277,7 +277,7 @@ def test_outlet_current_schedule_ok_off_done(sispy, outlet_current_schedule_data
 # test outlet schedule class
 
 def test_outlet_schedule(sispy, outlet_schedule_data):
-    schedule = Schedule(outlet_schedule_data, sispy)
+    schedule = OutletSchedule(outlet_schedule_data, sispy)
 
     # time.strptime doesn't take the timezone information into account. It just assumes it's alwasy in UTC
     # Need to compensate for this in the tests
@@ -304,7 +304,7 @@ def test_outlet_schedule(sispy, outlet_schedule_data):
 
 
 def test_outlet_schedule_non_periodic(sispy, outlet_schedule_data_non_periodic):
-    schedule = Schedule(outlet_schedule_data_non_periodic, sispy)
+    schedule = OutletSchedule(outlet_schedule_data_non_periodic, sispy)
 
     # time.strptime doesn't take the timezone information into account. It just assumes it's alwasy in UTC
     # Need to compensate for this in the tests
@@ -331,7 +331,7 @@ def test_outlet_schedule_non_periodic(sispy, outlet_schedule_data_non_periodic):
 
 
 def test_outlet_schedule_reset(sispy, outlet_schedule_data_reset):
-    schedule = Schedule(outlet_schedule_data_reset, sispy)
+    schedule = OutletSchedule(outlet_schedule_data_reset, sispy)
 
     # time.strptime doesn't take the timezone information into account. It just assumes it's alwasy in UTC
     # Need to compensate for this in the tests
@@ -346,7 +346,7 @@ def test_outlet_schedule_reset(sispy, outlet_schedule_data_reset):
 
 
 def test_outlet_schedule_vanilla(sispy, outlet_schedule_data_vanilla):
-    schedule = Schedule(outlet_schedule_data_vanilla, sispy)
+    schedule = OutletSchedule(outlet_schedule_data_vanilla, sispy)
 
     assert schedule.time_activated == time.strptime('1970-01-01 00:00:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule.rampup_minutes == 0

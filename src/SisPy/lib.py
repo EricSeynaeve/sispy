@@ -122,7 +122,7 @@ class OutletCurrentSchedule(object):
         return self._sequence_done
 
 
-class ScheduleItem(object):
+class OutletScheduleItem(object):
     def __init__(self, data, schedule, item_nr):
         self._data = data
         self._schedule = schedule
@@ -156,7 +156,7 @@ class ScheduleItem(object):
         return self._schedule._epoch_to_time(self._start_epoch() + self._minutes_to_next_schedule * 60)
 
 
-class Schedule(object):
+class OutletSchedule(object):
     def __init__(self, data, sispy):
         self._data = data
 
