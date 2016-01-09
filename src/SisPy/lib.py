@@ -67,7 +67,7 @@ class Outlet(object):
     @property
     def schedule(self):
         data = self._syspi._usb_read(SisPy.OUTLET_SCHEDULE, self._nr)
-        return OutletSchedule(data, self._syspi)
+        return OutletSchedule(data)
 
     @property
     def current_schedule(self):
@@ -156,10 +156,9 @@ class OutletScheduleItem(object):
 
 
 class OutletSchedule(object):
-    def __init__(self, data, sispy):
+    def __init__(self, data):
         self._data = data
 
-        self._sispy = sispy
         self._parse_data(self._data)
 
     def _parse_data(self, data):

@@ -276,8 +276,8 @@ def test_outlet_current_schedule_ok_off_done(sispy, outlet_current_schedule_data
 
 # test outlet schedule class
 
-def test_outlet_schedule(sispy, outlet_schedule_data):
-    schedule = OutletSchedule(outlet_schedule_data, sispy)
+def test_outlet_schedule(outlet_schedule_data):
+    schedule = OutletSchedule(outlet_schedule_data)
 
     # time.strptime doesn't take the timezone information into account. It just assumes it's alwasy in UTC
     # Need to compensate for this in the tests
@@ -303,8 +303,8 @@ def test_outlet_schedule(sispy, outlet_schedule_data):
     assert entry2.end_time == time.strptime('2016-01-05 17:16:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
 
-def test_outlet_schedule_non_periodic(sispy, outlet_schedule_data_non_periodic):
-    schedule = OutletSchedule(outlet_schedule_data_non_periodic, sispy)
+def test_outlet_schedule_non_periodic(outlet_schedule_data_non_periodic):
+    schedule = OutletSchedule(outlet_schedule_data_non_periodic)
 
     # time.strptime doesn't take the timezone information into account. It just assumes it's alwasy in UTC
     # Need to compensate for this in the tests
@@ -330,8 +330,8 @@ def test_outlet_schedule_non_periodic(sispy, outlet_schedule_data_non_periodic):
     assert entry2.end_time == time.strptime('2016-01-05 17:16:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
 
-def test_outlet_schedule_reset(sispy, outlet_schedule_data_reset):
-    schedule = OutletSchedule(outlet_schedule_data_reset, sispy)
+def test_outlet_schedule_reset(outlet_schedule_data_reset):
+    schedule = OutletSchedule(outlet_schedule_data_reset)
 
     # time.strptime doesn't take the timezone information into account. It just assumes it's alwasy in UTC
     # Need to compensate for this in the tests
@@ -345,8 +345,8 @@ def test_outlet_schedule_reset(sispy, outlet_schedule_data_reset):
     assert len(schedule.entries) == 0
 
 
-def test_outlet_schedule_vanilla(sispy, outlet_schedule_data_vanilla):
-    schedule = OutletSchedule(outlet_schedule_data_vanilla, sispy)
+def test_outlet_schedule_vanilla(outlet_schedule_data_vanilla):
+    schedule = OutletSchedule(outlet_schedule_data_vanilla)
 
     assert schedule.time_activated == time.strptime('1970-01-01 00:00:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule.rampup_minutes == 0
