@@ -55,22 +55,35 @@ class SisPy(object):
 
 
 class Outlet(object):
+    """Represent the state of single outlet.
+
+       With this classe, you can check where the outlet is in executing a hardware schedule,
+       examine or set the mentioned hardware schedule, check the power state of the outlet.
+    """
     def __init__(self, nr, sispy):
         self._nr = nr
         self._sispy = sispy
 
     @property
     def switched_on(self):
+        """Indicate whether the outlet is switched on.
+
+           True if the outlet is switched on.
+        """
         data = self._sispy._usb_read(SisPy.OUTLET_STATUS, self._nr)
         return data == 0x03
 
     @property
     def schedule(self):
+        """Represent the hardware schedule of the outlet.
+        """
         data = self._sispy._usb_read(SisPy.OUTLET_SCHEDULE, self._nr)
         return OutletSchedule(data)
 
     @property
     def current_schedule_item(self):
+        """Represent the current schedule item that's being executed.
+        """
         data = self._sispy._usb_read(SisPy.OUTLET_CURRENT_SCHEDULE_ITEM, self._nr)
         return OutletCurrentScheduleItem(data)
 
