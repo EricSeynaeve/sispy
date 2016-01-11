@@ -6,14 +6,18 @@ import usb
 
 
 class SisPy(object):
-    ID = 1
-    OUTLET_STATUS = 3
-    OUTLET_SCHEDULE = 4
-    OUTLET_CURRENT_SCHEDULE_ITEM = 5
+    """Represent the power supply.
+
+       Currently, on the first USB power supply is detected.
+    """
+    _ID = 1
+    _OUTLET_STATUS = 3
+    _OUTLET_SCHEDULE = 4
+    _OUTLET_CURRENT_SCHEDULE_ITEM = 5
 
     def __init__(self):
         self._dev = self._get_device()
-        self._id = self._usb_read(SisPy.ID)
+        self._id = self._usb_read(SisPy._ID)
         self._outlets = []
         for i in range(4):
             self._outlets.append(Outlet(i, self))
@@ -28,29 +32,40 @@ class SisPy(object):
     def _usb_read(self, command, outlet_nr=None):
         request_type = 0xa1
         request = 0x01
-        if command == SisPy.ID:
+        if command == SisPy._ID:
             data = self._dev.ctrl_transfer(request_type, request, 0x0301, 0, 4, 500)
             return struct.unpack('<L', data)[0]
-        if command == SisPy.OUTLET_STATUS:
+        if command == SisPy._OUTLET_STATUS:
             data = self._dev.ctrl_transfer(request_type, request, 0x0303 + outlet_nr * 3, 0, 1, 500)
             return data
-        if command == SisPy.OUTLET_SCHEDULE:
+        if command == SisPy._OUTLET_SCHEDULE:
             data = self._dev.ctrl_transfer(request_type, request, 0x0304 + outlet_nr * 3, 0, 38, 500)
             return data
-        if command == SisPy.OUTLET_CURRENT_SCHEDULE_ITEM:
+        if command == SisPy._OUTLET_CURRENT_SCHEDULE_ITEM:
             data = self._dev.ctrl_transfer(request_type, request, 0x0305 + outlet_nr * 3, 0, 3, 500)
             return data
 
     @property
     def id(self):
+        """The internal identifier of the power strip.
+
+           A (large) integer.
+        """
         return self._id
 
     @property
     def nr_outlets(self):
+        """The number of programmable outlets.
+           It's possible that the power strip containes more outlets, but these are then non-programmable.
+
+           An integer.
+        """
         return len(self._outlets)
 
     @property
     def outlets(self):
+        """List of Outlet objects that repesent the state of each programmable outlet.
+        """
         return self._outlets
 
 
@@ -70,21 +85,21 @@ class Outlet(object):
 
            True if the outlet is switched on.
         """
-        data = self._sispy._usb_read(SisPy.OUTLET_STATUS, self._nr)
+        data = self._sispy._usb_read(SisPy._OUTLET_STATUS, self._nr)
         return data == 0x03
 
     @property
     def schedule(self):
         """Represent the hardware schedule of the outlet.
         """
-        data = self._sispy._usb_read(SisPy.OUTLET_SCHEDULE, self._nr)
+        data = self._sispy._usb_read(SisPy._OUTLET_SCHEDULE, self._nr)
         return OutletSchedule(data)
 
     @property
     def current_schedule_item(self):
         """Represent the current schedule item that's being executed.
         """
-        data = self._sispy._usb_read(SisPy.OUTLET_CURRENT_SCHEDULE_ITEM, self._nr)
+        data = self._sispy._usb_read(SisPy._OUTLET_CURRENT_SCHEDULE_ITEM, self._nr)
         return OutletCurrentScheduleItem(data)
 
 
@@ -95,7 +110,7 @@ class OutletCurrentScheduleItem(object):
        It will indicate whether the outlet was switched on at the beginning of the current outlet schedule item,
        how long until the next outlet schedule item, where we are in the schedule list and whether a time error status is detected.
 
-       The latter can happen when the power socket is set without current for a long time.
+       The latter can happen when the power strip is set without current for a long time.
     """
     def __init__(self, data):
         self._data = data
@@ -119,7 +134,7 @@ class OutletCurrentScheduleItem(object):
 
     @property
     def timing_error(self):
-        """Indicate that the power socket is not sure about the current time anymore. This can happen when it's set without current for a long time.
+        """Indicate that the power strip is not sure about the current time anymore. This can happen when it's set without current for a long time.
 
            True for a detected error, False otherwise.
         """
@@ -153,7 +168,7 @@ class OutletCurrentScheduleItem(object):
     @property
     def minutes_to_next_schedule_item(self):
         """Number of minutes still to wait before starting the next schedule item.
-           This is updated by the power socket itself.
+           This is updated by the power strip itself.
 
            An integer with the number of minutes.
         """
@@ -278,7 +293,7 @@ class OutletSchedule(object):
 
     @property
     def time_activated(self):
-        """The time the schedule was activated (stored on the hardware power socket).
+        """The time the schedule was activated (stored on the power strip).
 
            The time is given by a time UTC tuple.
         """
