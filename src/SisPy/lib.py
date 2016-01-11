@@ -191,6 +191,11 @@ class OutletScheduleItem(object):
 
 
 class OutletSchedule(object):
+    """Represents the hardware schedule for an outlet. It contains a list of (max 16) schedules, the time to wait before starting the
+       schedule (rampup time) and when the schedule will start to run.
+
+       A schedule can be executed once or periodically.
+    """
     def __init__(self, data):
         self._data = data
 
@@ -225,18 +230,35 @@ class OutletSchedule(object):
 
     @property
     def time_activated(self):
+        """The time the schedule was activated (stored on the hardware power socket).
+
+           The time is given by a time UTC tuple.
+        """
         return self._epoch_to_time(self._epoch_activated)
 
     @property
     def rampup_minutes(self):
+        """Time to wait before starting the schedule.
+
+           This is given in minutes (an int).
+        """
         return self._rampup_minutes
 
     @property
     def periodic(self):
+        """Indicates whether the schedule is period or not.
+
+           This is True for a periodic schedule and False otherwise.
+        """
         return self._periodic
 
     @property
     def periodicity_minutes(self):
+        """If a schedule is periodic, the number of minutes before it repeats itself.
+           Otherise, None.
+
+           This is an integer with the number of minutes.
+        """
         if self.periodic is True:
             return self._add_schedule_minutes(self._entries)
         else:
@@ -244,6 +266,11 @@ class OutletSchedule(object):
 
     @property
     def schedule_minutes(self):
+        """If a schedule is not periodic, the time the schedule start will run.
+           If a schedule is periodic, None.
+
+           This is an integer with the number of minutes.
+        """
         if self.periodic is True:
             return None
         else:
@@ -254,10 +281,19 @@ class OutletSchedule(object):
 
     @property
     def start_time(self):
+        """The time that the schedule will start. This is the actual time after the rampup is finished.
+
+           This is a time UTC tuple.
+        """
         return self._epoch_to_time(self._start_epoch())
 
     @property
     def end_time(self):
+        """For periodic schedules,some silly date long, long time in the future.
+           For non-periodic schedules, time when the schedule will finish.
+
+           This is a time UTC tuple.
+        """
         if self.periodic is True:
             return time.strptime('2999-12-31 23:59:59 UTC', '%Y-%m-%d %H:%M:%S %Z')
         else:
@@ -265,6 +301,8 @@ class OutletSchedule(object):
 
     @property
     def entries(self):
+        """List of the OutletScheduleItem objects linked with the timer.
+        """
         return self._entries
 
 # vim: set ai tabstop=4 shiftwidth=4 expandtab :
