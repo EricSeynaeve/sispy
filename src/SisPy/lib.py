@@ -52,6 +52,18 @@ class SisPy(object):
         assert data[0] == report_nr
         return data[1:]
 
+    def _usb_write(self, command, outlet_nr, data):
+        request_type = 0x21
+        request = 0x09
+        report_nr = None
+        if command == SisPy._OUTLET_STATUS:
+            assert len(data) == 1
+            report_nr = 0x03 + outlet_nr * 3
+        data.insert(0, report_nr)
+        bytes_written = self._dev.ctrl_transfer(request_type, request, 0x0300 + report_nr, 0, data, 500)
+        assert bytes_written == len(data)
+        return bytes_written - 1
+
     @property
     def id(self):
         """The internal identifier of the power strip.
@@ -90,12 +102,24 @@ class Outlet(object):
 
     @property
     def switched_on(self):
-        """Indicate whether the outlet is switched on.
+        """Read or assign the status of the outlet.
 
-           True if the outlet is switched on.
+           If read, indicate whether the outlet is switched on. True if the outlet is switched on. False otherwise.
+
+           If assigned, set the outlet on (True) or off (False).
         """
         data = self._sispy._usb_read(SisPy._OUTLET_STATUS, self._nr)
         return data[0] == 0x03
+
+    @switched_on.setter
+    def switched_on(self, value):
+        if value is True:
+            self._sispy._usb_write(SisPy._OUTLET_STATUS, self._nr, bytearray([1]))
+            return
+        if value is False:
+            self._sispy._usb_write(SisPy._OUTLET_STATUS, self._nr, bytearray([0]))
+            return
+        raise TypeError("Can't assign a " + value.__class__.__name__ + " to a boolean property.")
 
     @property
     def schedule(self):

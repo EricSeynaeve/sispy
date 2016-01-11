@@ -37,30 +37,20 @@ def device():
             else:
                 return 0x00
 
-        def ctrl_transfer(self, request_type, request, value=0, index=0, data_or_length=None, timeout=None):
-            assert (request_type & (1 << 5 | 1)) == (1 << 5 | 1)
-            if self.in_type(request_type) is True:
-                assert request == 1
-            else:
-                assert request == 8 | 1
-            assert (value & (3 << 8)) == (3 << 8)
-            value = value & (~ (3 << 8))
-            assert index == 0
-            assert timeout == 500
-
+        def mock_read_data(self, report_nr, data_or_length):
             data = None
             # get id
-            if value == 1 and self.in_type(request_type):
+            if report_nr == 1:
                 assert data_or_length == 5
                 data = id_data()
             # get status outlet
-            if (value in (3, 6, 9, 12)) and self.in_type(request_type):
+            if (report_nr in (3, 6, 9, 12)):
                 assert data_or_length == 2
-                data = [self.get_outlet_status((value - 3) / 3)]
+                data = [self.get_outlet_status((report_nr - 3) / 3)]
             # get full schedule outlet
-            if (value in (4, 7, 10, 13)) and self.in_type(request_type):
+            if (report_nr in (4, 7, 10, 13)):
                 assert data_or_length == 39
-                outlet = (value - 4) / 3
+                outlet = (report_nr - 4) / 3
                 if outlet == 0:
                     data = outlet_schedule_data()
                 if outlet == 1:
@@ -70,9 +60,9 @@ def device():
                 if outlet == 3:
                     data = outlet_schedule_data_reset()
             # get current schedule outlet
-            if (value in (5, 8, 11, 14)) and self.in_type(request_type):
+            if (report_nr in (5, 8, 11, 14)):
                 assert data_or_length == 4
-                outlet = (value - 5) / 3
+                outlet = (report_nr - 5) / 3
                 if outlet == 0:
                     data = outlet_current_schedule_item_data_ok_off()
                 if outlet == 1:
@@ -82,8 +72,29 @@ def device():
                 if outlet == 3:
                     data = outlet_current_schedule_item_data_ok_off_done()
             # the report number is added as first byte
-            data.insert(0, value)
+            data.insert(0, report_nr)
             return data
+
+        def ctrl_transfer(self, request_type, request, value=0, index=0, data_or_length=None, timeout=None):
+            assert (request_type & (1 << 5 | 1)) == (1 << 5 | 1)
+            if self.in_type(request_type) is True:
+                assert request == 1
+            else:
+                assert request == 8 | 1
+            assert (value & (3 << 8)) == (3 << 8)
+            assert index == 0
+            assert timeout == 500
+
+            self.send_meta = None
+            self.send_data = None
+
+            if self.in_type(request_type) is True:
+                report_nr = value & (~ (3 << 8))
+                return self.mock_read_data(report_nr, data_or_length)
+            else:
+                self.send_meta = bytearray([request_type, request, value & 0xFF, int(value / 0xFF), index])
+                self.send_data = data_or_length
+                return len(data_or_length)
 
     return MockDevice()
 
@@ -219,6 +230,23 @@ def test_outlets_status(sispy):
     assert sispy.outlets[1].switched_on is False
     assert sispy.outlets[2].switched_on is False
     assert sispy.outlets[3].switched_on is True
+
+
+def test_outlets_status_change(sispy):
+    sispy.outlets[0].switched_on = True
+    assert sispy._dev.send_meta == bytearray([0x21, 0x09, 0x03, 0x03, 0x00])
+    assert sispy._dev.send_data == bytearray([0x03, 0x01])
+
+    sispy.outlets[0].switched_on = False
+    assert sispy._dev.send_meta == bytearray([0x21, 0x09, 0x03, 0x03, 0x00])
+    assert sispy._dev.send_data == bytearray([0x03, 0x00])
+
+    sispy.outlets[1].switched_on = True
+    assert sispy._dev.send_meta == bytearray([0x21, 0x09, 0x06, 0x03, 0x00])
+    assert sispy._dev.send_data == bytearray([0x06, 0x01])
+
+    with pytest.raises(TypeError):
+        sispy.outlets[0].switched_on = 1
 
 
 # Test outlet schedule
