@@ -1,4 +1,8 @@
 #! /usr/bin/env python
+"""Library functions to work with the Energenie EG-PMS series of programmable power switches.
+
+   At the moment, only tested on an EG-PMS2.
+"""
 
 import struct
 import time
