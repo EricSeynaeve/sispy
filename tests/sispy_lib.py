@@ -48,38 +48,42 @@ def device():
             assert index == 0
             assert timeout == 500
 
+            data = None
             # get id
             if value == 1 and self.in_type(request_type):
-                assert data_or_length == 4
-                return id_data()
+                assert data_or_length == 5
+                data = id_data()
             # get status outlet
             if (value in (3, 6, 9, 12)) and self.in_type(request_type):
-                assert data_or_length == 1
-                return self.get_outlet_status((value - 3) / 3)
+                assert data_or_length == 2
+                data = [self.get_outlet_status((value - 3) / 3)]
             # get full schedule outlet
             if (value in (4, 7, 10, 13)) and self.in_type(request_type):
-                assert data_or_length == 38
+                assert data_or_length == 39
                 outlet = (value - 4) / 3
                 if outlet == 0:
-                    return outlet_schedule_data()
+                    data = outlet_schedule_data()
                 if outlet == 1:
-                    return outlet_schedule_data_vanilla()
+                    data = outlet_schedule_data_vanilla()
                 if outlet == 2:
-                    return outlet_schedule_data_non_periodic()
+                    data = outlet_schedule_data_non_periodic()
                 if outlet == 3:
-                    return outlet_schedule_data_reset()
+                    data = outlet_schedule_data_reset()
             # get current schedule outlet
             if (value in (5, 8, 11, 14)) and self.in_type(request_type):
-                assert data_or_length == 3
+                assert data_or_length == 4
                 outlet = (value - 5) / 3
                 if outlet == 0:
-                    return outlet_current_schedule_item_data_ok_off()
+                    data = outlet_current_schedule_item_data_ok_off()
                 if outlet == 1:
-                    return outlet_current_schedule_item_data_ok_on()
+                    data = outlet_current_schedule_item_data_ok_on()
                 if outlet == 2:
-                    return outlet_current_schedule_item_data_ok_off_rampup()
+                    data = outlet_current_schedule_item_data_ok_off_rampup()
                 if outlet == 3:
-                    return outlet_current_schedule_item_data_ok_off_done()
+                    data = outlet_current_schedule_item_data_ok_off_done()
+            # the report number is added as first byte
+            data.insert(0, value)
+            return data
 
     return MockDevice()
 

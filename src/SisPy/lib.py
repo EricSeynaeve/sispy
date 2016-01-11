@@ -36,18 +36,21 @@ class SisPy(object):
     def _usb_read(self, command, outlet_nr=None):
         request_type = 0xa1
         request = 0x01
+        report_nr = None
         if command == SisPy._ID:
-            data = self._dev.ctrl_transfer(request_type, request, 0x0301, 0, 4, 500)
-            return struct.unpack('<L', data)[0]
+            report_nr = 0x01
+            data = self._dev.ctrl_transfer(request_type, request, 0x0300 + report_nr, 0, 4 + 1, 500)
         if command == SisPy._OUTLET_STATUS:
-            data = self._dev.ctrl_transfer(request_type, request, 0x0303 + outlet_nr * 3, 0, 1, 500)
-            return data
+            report_nr = 0x03 + outlet_nr * 3
+            data = self._dev.ctrl_transfer(request_type, request, 0x0300 + report_nr, 0, 1 + 1, 500)
         if command == SisPy._OUTLET_SCHEDULE:
-            data = self._dev.ctrl_transfer(request_type, request, 0x0304 + outlet_nr * 3, 0, 38, 500)
-            return data
+            report_nr = 0x04 + outlet_nr * 3
+            data = self._dev.ctrl_transfer(request_type, request, 0x0300 + report_nr, 0, 38 + 1, 500)
         if command == SisPy._OUTLET_CURRENT_SCHEDULE_ITEM:
-            data = self._dev.ctrl_transfer(request_type, request, 0x0305 + outlet_nr * 3, 0, 3, 500)
-            return data
+            report_nr = 0x05 + outlet_nr * 3
+            data = self._dev.ctrl_transfer(request_type, request, 0x0300 + report_nr, 0, 3 + 1, 500)
+        assert data[0] == report_nr
+        return data[1:]
 
     @property
     def id(self):
@@ -55,6 +58,8 @@ class SisPy(object):
 
            A (large) integer.
         """
+        data = self._usb_read(SisPy._ID)
+        self._id = struct.unpack('<L', data)[0]
         return self._id
 
     @property
@@ -90,7 +95,7 @@ class Outlet(object):
            True if the outlet is switched on.
         """
         data = self._sispy._usb_read(SisPy._OUTLET_STATUS, self._nr)
-        return data == 0x03
+        return data[0] == 0x03
 
     @property
     def schedule(self):
