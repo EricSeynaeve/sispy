@@ -9,7 +9,7 @@ class SisPy(object):
     ID = 1
     OUTLET_STATUS = 3
     OUTLET_SCHEDULE = 4
-    OUTLET_CURRENT_SCHEDULE = 5
+    OUTLET_CURRENT_SCHEDULE_ITEM = 5
 
     def __init__(self):
         self._dev = self._get_device()
@@ -37,7 +37,7 @@ class SisPy(object):
         if command == SisPy.OUTLET_SCHEDULE:
             data = self._dev.ctrl_transfer(request_type, request, 0x0304 + outlet_nr * 3, 0, 38, 500)
             return data
-        if command == SisPy.OUTLET_CURRENT_SCHEDULE:
+        if command == SisPy.OUTLET_CURRENT_SCHEDULE_ITEM:
             data = self._dev.ctrl_transfer(request_type, request, 0x0305 + outlet_nr * 3, 0, 3, 500)
             return data
 
@@ -70,12 +70,20 @@ class Outlet(object):
         return OutletSchedule(data)
 
     @property
-    def current_schedule(self):
-        data = self._sispy._usb_read(SisPy.OUTLET_CURRENT_SCHEDULE, self._nr)
-        return OutletCurrentSchedule(data)
+    def current_schedule_item(self):
+        data = self._sispy._usb_read(SisPy.OUTLET_CURRENT_SCHEDULE_ITEM, self._nr)
+        return OutletCurrentScheduleItem(data)
 
 
-class OutletCurrentSchedule(object):
+class OutletCurrentScheduleItem(object):
+    """Indicates where the outlet currently is in the execution of the schedule.
+       This is continuously updated by the outlet. Also, this information is only informational, nothing can be set.
+
+       It will indicate whether the outlet was switched on at the beginning of the current outlet schedule item,
+       how long until the next outlet schedule item, where we are in the schedule list and whether a time error status is detected.
+
+       The latter can happen when the power socket is set without current for a long time.
+    """
     def __init__(self, data):
         self._data = data
 
@@ -87,37 +95,64 @@ class OutletCurrentSchedule(object):
             # We're still waiting for the initial delay to finish
             self._next_schedule_nr = 0
             self._sequence_rampup = True
-            self._minutes_to_next_schedule = value
+            self._minutes_to_next_schedule_item = value
         else:
             self._next_schedule_nr = (data[0] & 0x7f)
             self._sequence_rampup = False
-            self._minutes_to_next_schedule = (value & 0x3FFF)
+            self._minutes_to_next_schedule_item = (value & 0x3FFF)
 
         self._switched_it_on = (value & 0x8000 == 0x8000)
-        self._sequence_done = (self._minutes_to_next_schedule == 0)
+        self._sequence_done = (self._minutes_to_next_schedule_item == 0)
 
     @property
     def timing_error(self):
+        """Indicate that the power socket is not sure about the current time anymore. This can happen when it's set without current for a long time.
+
+           True for a detected error, False otherwise.
+        """
         return self._timing_error
 
     @property
     def sequence_rampup(self):
+        """Indicate if the outlet is still in rampup state.
+
+           True if this is the case, False otherwise.
+        """
         return self._sequence_rampup
 
     @property
     def next_schedule_nr(self):
+        """Schedule number of the next schedule in the list to execute.
+
+           An integer from 0 onwards.
+        """
         return self._next_schedule_nr
 
     @property
     def switched_it_on(self):
+        """Indicate whether the outlet was switched on at the start of the schedule or not.
+           The current status of the outlet can be different due to other influences.
+
+           True if the outlet was switched on.
+        """
         return self._switched_it_on
 
     @property
-    def minutes_to_next_schedule(self):
-        return self._minutes_to_next_schedule
+    def minutes_to_next_schedule_item(self):
+        """Number of minutes still to wait before starting the next schedule item.
+           This is updated by the power socket itself.
+
+           An integer with the number of minutes.
+        """
+        return self._minutes_to_next_schedule_item
 
     @property
     def sequence_done(self):
+        """Indicate whether the sequence finished executing.
+           This can only happen for non-periodic sequences.
+
+           True if the sequence is finished.
+        """
         return self._sequence_done
 
 

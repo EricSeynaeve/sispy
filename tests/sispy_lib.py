@@ -2,7 +2,7 @@
 
 from SisPy.lib import SisPy
 from SisPy.lib import Outlet
-from SisPy.lib import OutletCurrentSchedule
+from SisPy.lib import OutletCurrentScheduleItem
 from SisPy.lib import OutletSchedule
 from SisPy.lib import OutletScheduleItem
 
@@ -73,13 +73,13 @@ def device():
                 assert data_or_length == 3
                 outlet = (value - 5) / 3
                 if outlet == 0:
-                    return outlet_current_schedule_data_ok_off()
+                    return outlet_current_schedule_item_data_ok_off()
                 if outlet == 1:
-                    return outlet_current_schedule_data_ok_on()
+                    return outlet_current_schedule_item_data_ok_on()
                 if outlet == 2:
-                    return outlet_current_schedule_data_ok_off_rampup()
+                    return outlet_current_schedule_item_data_ok_off_rampup()
                 if outlet == 3:
-                    return outlet_current_schedule_data_ok_off_done()
+                    return outlet_current_schedule_item_data_ok_off_done()
 
     return MockDevice()
 
@@ -100,7 +100,7 @@ def sispy(device):
 ####
 
 @pytest.fixture
-def outlet_current_schedule_data_ok_off():
+def outlet_current_schedule_item_data_ok_off():
     """Executing the first schedule (second schedule is the next one).
        Time it will still execute is 2 minutes.
        This schedule set the outlet off at it's start (status now can be different due to override)
@@ -111,7 +111,7 @@ def outlet_current_schedule_data_ok_off():
 
 
 @pytest.fixture
-def outlet_current_schedule_data_ok_off_long_time():
+def outlet_current_schedule_item_data_ok_off_long_time():
     """Executing the first schedule (second schedule is the next one).
        Time it will still execute is a lot (0x3002).
        This schedule set the outlet off at it's start (status now can be different due to override).
@@ -122,7 +122,7 @@ def outlet_current_schedule_data_ok_off_long_time():
 
 
 @pytest.fixture
-def outlet_current_schedule_data_ok_on():
+def outlet_current_schedule_item_data_ok_on():
     """Executing the first schedule (second schedule is the next one).
        Time it will still execute is 2 minutes.
        This schedule set the outlet on at it's start (status now can be different due to override).
@@ -133,7 +133,7 @@ def outlet_current_schedule_data_ok_on():
 
 
 @pytest.fixture
-def outlet_current_schedule_data_error_off():
+def outlet_current_schedule_item_data_error_off():
     """Executing the first schedule (second schedule is the next one).
        Time it will still execute is 2 minutes.
        This schedule set the outlet off at it's start (status now can be different due to override).
@@ -145,7 +145,7 @@ def outlet_current_schedule_data_error_off():
 
 
 @pytest.fixture
-def outlet_current_schedule_data_ok_off_rampup():
+def outlet_current_schedule_item_data_ok_off_rampup():
     """Still waiting to start the schedules (first schedule is the next one).
        Time it will still wait is 2 minutes.
     """
@@ -153,7 +153,7 @@ def outlet_current_schedule_data_ok_off_rampup():
 
 
 @pytest.fixture
-def outlet_current_schedule_data_ok_off_done():
+def outlet_current_schedule_item_data_ok_off_done():
     """All schedules were executed.
        This also means that no looping was requested.
     """
@@ -227,52 +227,52 @@ def test_outlets_schedule(sispy):
 
 
 def test_outlets_current_schedule(sispy):
-    assert sispy.outlets[0].current_schedule._data == outlet_current_schedule_data_ok_off()
-    assert sispy.outlets[1].current_schedule._data == outlet_current_schedule_data_ok_on()
-    assert sispy.outlets[2].current_schedule._data == outlet_current_schedule_data_ok_off_rampup()
-    assert sispy.outlets[3].current_schedule._data == outlet_current_schedule_data_ok_off_done()
+    assert sispy.outlets[0].current_schedule_item._data == outlet_current_schedule_item_data_ok_off()
+    assert sispy.outlets[1].current_schedule_item._data == outlet_current_schedule_item_data_ok_on()
+    assert sispy.outlets[2].current_schedule_item._data == outlet_current_schedule_item_data_ok_off_rampup()
+    assert sispy.outlets[3].current_schedule_item._data == outlet_current_schedule_item_data_ok_off_done()
 
 
-# test outlet current schedule class
+# test outlet current schedule item class
 
-def _test_outlet_current_schedule(current_schedule, timing_error=False, switched_it_on=False, minutes_to_next_schedule=2,
+def _test_outlet_current_schedule(current_schedule, timing_error=False, switched_it_on=False, minutes_to_next_schedule_item=2,
                                   next_schedule_nr=1, sequence_rampup=False, sequence_done=False):
     assert current_schedule.timing_error == timing_error
     assert current_schedule.switched_it_on == switched_it_on
-    assert current_schedule.minutes_to_next_schedule == minutes_to_next_schedule
+    assert current_schedule.minutes_to_next_schedule_item == minutes_to_next_schedule_item
     assert current_schedule.next_schedule_nr == next_schedule_nr
     assert current_schedule.sequence_rampup == sequence_rampup
     assert current_schedule.sequence_done == sequence_done
 
 
-def test_outlet_current_schedule_ok_off(outlet_current_schedule_data_ok_off):
-    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off)
+def test_outlet_current_schedule_item_ok_off(outlet_current_schedule_item_data_ok_off):
+    current_schedule = OutletCurrentScheduleItem(outlet_current_schedule_item_data_ok_off)
     _test_outlet_current_schedule(current_schedule)
 
 
-def test_outlet_current_schedule_ok_off_long_time(outlet_current_schedule_data_ok_off_long_time):
-    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_long_time)
-    _test_outlet_current_schedule(current_schedule, minutes_to_next_schedule=12290)
+def test_outlet_current_schedule_item_ok_off_long_time(outlet_current_schedule_item_data_ok_off_long_time):
+    current_schedule = OutletCurrentScheduleItem(outlet_current_schedule_item_data_ok_off_long_time)
+    _test_outlet_current_schedule(current_schedule, minutes_to_next_schedule_item=12290)
 
 
-def test_outlet_current_schedule_error_off(outlet_current_schedule_data_error_off):
-    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_error_off)
+def test_outlet_current_schedule_item_error_off(outlet_current_schedule_item_data_error_off):
+    current_schedule = OutletCurrentScheduleItem(outlet_current_schedule_item_data_error_off)
     _test_outlet_current_schedule(current_schedule, timing_error=True)
 
 
-def test_outlet_current_schedule_ok_on(outlet_current_schedule_data_ok_on):
-    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_on)
+def test_outlet_current_schedule_item_ok_on(outlet_current_schedule_item_data_ok_on):
+    current_schedule = OutletCurrentScheduleItem(outlet_current_schedule_item_data_ok_on)
     _test_outlet_current_schedule(current_schedule, switched_it_on=True)
 
 
-def test_outlet_current_schedule_ok_off_rampup(outlet_current_schedule_data_ok_off_rampup):
-    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_rampup)
+def test_outlet_current_schedule_item_ok_off_rampup(outlet_current_schedule_item_data_ok_off_rampup):
+    current_schedule = OutletCurrentScheduleItem(outlet_current_schedule_item_data_ok_off_rampup)
     _test_outlet_current_schedule(current_schedule, sequence_rampup=True, next_schedule_nr=0)
 
 
-def test_outlet_current_schedule_ok_off_done(outlet_current_schedule_data_ok_off_done):
-    current_schedule = OutletCurrentSchedule(outlet_current_schedule_data_ok_off_done)
-    _test_outlet_current_schedule(current_schedule, sequence_done=True, minutes_to_next_schedule=0, next_schedule_nr=2)
+def test_outlet_current_schedule_item_ok_off_done(outlet_current_schedule_item_data_ok_off_done):
+    current_schedule = OutletCurrentScheduleItem(outlet_current_schedule_item_data_ok_off_done)
+    _test_outlet_current_schedule(current_schedule, sequence_done=True, minutes_to_next_schedule_item=0, next_schedule_nr=2)
 
 
 # test outlet schedule class
