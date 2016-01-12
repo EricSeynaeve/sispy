@@ -6,6 +6,7 @@
 
 import struct
 import time
+import calendar
 import usb
 
 
@@ -247,7 +248,15 @@ class OutletScheduleItem(object):
     def _parse_data(self, data):
         value = struct.unpack('<H', data)[0]
         self._switch_on = (value & 0x8000 == 0x8000)
-        self._minutes_to_next_schedule = (value & 0x3FFF)
+        self._minutes_to_next_schedule_item = (value & 0x3FFF)
+
+    def _construct_data(self):
+        value = self._minutes_to_next_schedule_item
+        if self._switch_on is True:
+            value |= 0x8000
+        data = bytearray([0, 0])
+        struct.pack_into('<H', data, 0, value)
+        return data
 
     @property
     def switch_on(self):
@@ -257,13 +266,34 @@ class OutletScheduleItem(object):
         """
         return self._switch_on
 
+    @switch_on.setter
+    def switch_on(self, new_setting):
+        if isinstance(new_setting, bool):
+            self._switch_on = new_setting
+        else:
+            raise TypeError("Can't set the switch status in schedule item with a " + new_setting.__class__.__name__)
+
     @property
-    def minutes_to_next_schedule(self):
+    def minutes_to_next_schedule_item(self):
         """The set wait time in minutes after this schedule item was started to start the next one.
 
-           This is always an int.
+           When set, this will adjust the end time of this schedule.
+
+           This is always an int indicating the number of minutes.
         """
-        return self._minutes_to_next_schedule
+        return self._minutes_to_next_schedule_item
+
+    @minutes_to_next_schedule_item.setter
+    def minutes_to_next_schedule_item(self, new_minutes):
+        if isinstance(new_minutes, int):
+            if new_minutes < 0:
+                raise ValueError("Can't set a number of minutes < 0")
+            if new_minutes > 0x3FF:
+                raise ValueError("Number of minutes to set too big (> 16383 (~ 273+ hourse or ~ 11+ days))")
+
+            self._minutes_to_next_schedule_item = new_minutes
+        else:
+            raise TypeError("Can't use a " + new_minutes.__class__.__name__ + " to set the number of minutes.")
 
     def _start_epoch(self):
         delay_minutes = self._schedule._add_schedule_minutes(self._schedule._entries[:self._item_nr])
@@ -273,17 +303,59 @@ class OutletScheduleItem(object):
     def start_time(self):
         """Start time of this schedule item.
 
+           If set, this will automatically also adjust the end_time.
+
            This is a time UTC tuple.
         """
         return self._schedule._epoch_to_time(self._start_epoch())
+
+    @start_time.setter
+    def start_time(self, new_time):
+        """Set the new start time. This also shifts the end time with as much time.
+        """
+        if isinstance(new_time, time.struct_time):
+            new_start_epoch = calendar.timegm(new_time)
+        else:
+            raise TypeError("Can't us a " + new_time.__class__.__name__ + " type to set the time.")
+
+        if self._item_nr == 0:
+            if new_start_epoch < self._schedule._start_epoch():
+                raise ValueError("Start time of first schedule item needs to be after the start time of the outlet schedule.")
+            self._schedule._rampup_minutes = int((new_start_epoch - self._schedule._start_epoch()) / 60)
+            print self._schedule._rampup_minutes
+            # ensure there is always a whole number of minutes between the times.
+            self._schedule._epoch_activated = new_start_epoch - self._schedule._rampup_minutes * 60
+        else:
+            prev_item = self._schedule.entries[self._item_nr - 1]
+            if new_start_epoch < prev_item._start_epoch():
+                raise ValueError("Start time of a schedule item needs to be after the start time of the previous schedule item.")
+            prev_item._minutes_to_next_schedule_item = int((new_start_epoch - prev_item._start_epoch()) / 60)
 
     @property
     def end_time(self):
         """When this schedule item will end and the next one will start.
 
+           On setting, you can't set it to a value smaller than the start time.
+           On setting, the wait time is adjusted automatically.
+
            This is a time UTC tuple.
         """
-        return self._schedule._epoch_to_time(self._start_epoch() + self._minutes_to_next_schedule * 60)
+        return self._schedule._epoch_to_time(self._start_epoch() + self._minutes_to_next_schedule_item * 60)
+
+    @end_time.setter
+    def end_time(self, new_time):
+        """Set the new end time. This time cannot be smaller than the start time.
+        """
+        end_epoch = None
+        if isinstance(new_time, time.struct_time):
+            end_epoch = calendar.timegm(new_time)
+        else:
+            raise TypeError("Can't us a " + new_time.__class__.__name__ + " type to set the time.")
+
+        if end_epoch < self._start_epoch():
+            raise ValueError("End time needs to be after start time")
+
+        self.minutes_to_next_schedule_item = int((end_epoch - self._start_epoch()) / 60)
 
 
 class OutletSchedule(object):
@@ -320,7 +392,7 @@ class OutletSchedule(object):
 
     def _add_schedule_minutes(self, schedules):
         if len(schedules) > 0:
-            return reduce(lambda x, y: x + y, [s._minutes_to_next_schedule for s in schedules])
+            return reduce(lambda x, y: x + y, [s._minutes_to_next_schedule_item for s in schedules])
         else:
             return 0
 

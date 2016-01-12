@@ -207,7 +207,7 @@ def test_mock(sispy):
     assert isinstance(sispy, SisPy)
 
 
-# Test powersupply
+# Test power switch
 
 def test_property_defaults(sispy):
     assert sispy.id == 67305985
@@ -325,13 +325,13 @@ def test_outlet_schedule(outlet_schedule_data):
 
     entry1 = schedule.entries[0]
     assert entry1.switch_on is True
-    assert entry1.minutes_to_next_schedule == 3
+    assert entry1.minutes_to_next_schedule_item == 3
     assert entry1.start_time == time.strptime('2016-01-05 17:11:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert entry1.end_time == time.strptime('2016-01-05 17:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
     entry2 = schedule.entries[1]
     assert entry2.switch_on is False
-    assert entry2.minutes_to_next_schedule == 2
+    assert entry2.minutes_to_next_schedule_item == 2
     assert entry2.start_time == time.strptime('2016-01-05 17:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert entry2.end_time == time.strptime('2016-01-05 17:16:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
@@ -352,13 +352,13 @@ def test_outlet_schedule_non_periodic(outlet_schedule_data_non_periodic):
 
     entry1 = schedule.entries[0]
     assert entry1.switch_on is True
-    assert entry1.minutes_to_next_schedule == 3
+    assert entry1.minutes_to_next_schedule_item == 3
     assert entry1.start_time == time.strptime('2016-01-05 17:11:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert entry1.end_time == time.strptime('2016-01-05 17:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
     entry2 = schedule.entries[1]
     assert entry2.switch_on is False
-    assert entry2.minutes_to_next_schedule == 2
+    assert entry2.minutes_to_next_schedule_item == 2
     assert entry2.start_time == time.strptime('2016-01-05 17:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert entry2.end_time == time.strptime('2016-01-05 17:16:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
@@ -389,5 +389,94 @@ def test_outlet_schedule_vanilla(outlet_schedule_data_vanilla):
     assert schedule.schedule_minutes == 0
     assert schedule.end_time == time.strptime('1970-01-01 00:00:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert len(schedule.entries) == 0
+
+
+def test_outlet_schedule_change_first_entry(outlet_schedule_data):
+    schedule = OutletSchedule(outlet_schedule_data)
+
+    schedule_entry1 = schedule.entries[0]
+
+    schedule_entry1.start_time = time.strptime('2016-01-05 21:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.time_activated == time.strptime('2016-01-05 17:12:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.rampup_minutes == 4 * 60 + 3
+    assert schedule_entry1.start_time == time.strptime('2016-01-05 21:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry1.minutes_to_next_schedule_item == 3
+    assert schedule_entry1.end_time == time.strptime('2016-01-05 21:18:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.entries[1].start_time == time.strptime('2016-01-05 21:18:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    with pytest.raises(TypeError):
+        schedule_entry1.start_time = 'abc'
+    assert schedule_entry1.start_time == time.strptime('2016-01-05 21:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    with pytest.raises(ValueError):
+        schedule_entry1.start_time = time.strptime('2016-01-05 17:12:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry1.start_time == time.strptime('2016-01-05 21:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry1._construct_data() == bytearray([0x3, 0x80])
+
+    schedule_entry1.minutes_to_next_schedule_item = 8 * 60
+    assert schedule.time_activated == time.strptime('2016-01-05 17:12:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.rampup_minutes == 4 * 60 + 3
+    assert schedule_entry1.start_time == time.strptime('2016-01-05 21:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry1.minutes_to_next_schedule_item == 8 * 60
+    assert schedule_entry1.end_time == time.strptime('2016-01-06 05:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.entries[1].start_time == time.strptime('2016-01-06 05:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry1._construct_data() == bytearray([0xE0, 0x81])
+
+    with pytest.raises(TypeError):
+        schedule_entry1.minutes_to_next_schedule_item = 'abc'
+    assert schedule_entry1.minutes_to_next_schedule_item == 8 * 60
+    with pytest.raises(ValueError):
+        schedule_entry1.minutes_to_next_schedule_item = -1
+    assert schedule_entry1.minutes_to_next_schedule_item == 8 * 60
+    with pytest.raises(ValueError):
+        schedule_entry1.minutes_to_next_schedule_item = 0xFFFF
+    assert schedule_entry1.minutes_to_next_schedule_item == 8 * 60
+
+    schedule_entry1.end_time = time.strptime('2016-01-05 21:25:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry1.start_time == time.strptime('2016-01-05 21:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry1.minutes_to_next_schedule_item == 10
+    assert schedule_entry1.end_time == time.strptime('2016-01-05 21:25:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.entries[1].start_time == time.strptime('2016-01-05 21:25:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry1._construct_data() == bytearray([0x0A, 0x80])
+    with pytest.raises(TypeError):
+        schedule_entry1.end_time = 'abc'
+    assert schedule_entry1.end_time == time.strptime('2016-01-05 21:25:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    with pytest.raises(ValueError):
+        schedule_entry1.end_time = time.strptime('2016-01-05 21:15:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry1.end_time == time.strptime('2016-01-05 21:25:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+
+    assert schedule_entry1.switch_on is True
+    schedule_entry1.switch_on = False
+    assert schedule_entry1.switch_on is False
+    assert schedule_entry1._construct_data() == bytearray([0x0A, 0x00])
+    with pytest.raises(TypeError):
+        schedule_entry1.switch_on = 1
+    assert schedule_entry1.switch_on is False
+
+
+def test_outlet_schedule_change_second(outlet_schedule_data):
+    schedule = OutletSchedule(outlet_schedule_data)
+
+    schedule_entry2 = schedule.entries[1]
+
+    schedule_entry2.start_time = time.strptime('2016-01-05 21:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.time_activated == time.strptime('2016-01-05 17:10:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.entries[0].start_time == time.strptime('2016-01-05 17:11:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule.entries[0].minutes_to_next_schedule_item == 4 * 60 + 3
+    assert schedule.entries[0].end_time == time.strptime('2016-01-05 21:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry2.start_time == time.strptime('2016-01-05 21:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry2.minutes_to_next_schedule_item == 2
+    assert schedule_entry2.end_time == time.strptime('2016-01-05 21:16:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    with pytest.raises(ValueError):
+        schedule_entry2.start_time = time.strptime('2016-01-05 17:11:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry2.start_time == time.strptime('2016-01-05 21:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+
+    schedule_entry2.minutes_to_next_schedule_item = 8 * 60
+    assert schedule_entry2.start_time == time.strptime('2016-01-05 21:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry2.minutes_to_next_schedule_item == 8 * 60
+    assert schedule_entry2.end_time == time.strptime('2016-01-06 05:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+
+    schedule_entry2.end_time = time.strptime('2016-01-05 21:25:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry2.start_time == time.strptime('2016-01-05 21:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry2.minutes_to_next_schedule_item == 10
+    assert schedule_entry2.end_time == time.strptime('2016-01-05 21:24:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
 # vim: set ai tabstop=4 shiftwidth=4 expandtab :
