@@ -489,6 +489,34 @@ def test_outlet_schedule_change_second(outlet_schedule_data, sispy):
     assert schedule_entry2.end_time == time.strptime('2016-01-05 21:24:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
 
+def test_outlet_schedule_entry_add(outlet_schedule_data, sispy):
+    schedule = OutletSchedule(outlet_schedule_data, sispy)
+
+    schedule.add_entry()
+    assert len(schedule.entries) == 3
+
+    schedule_entry2 = schedule.entries[1]
+    schedule_entry3 = schedule.entries[2]
+    assert schedule_entry3.switch_on is False
+    assert schedule_entry3.start_time == schedule_entry2.end_time
+    assert schedule_entry3.minutes_to_next_schedule_item == 0
+    assert schedule_entry3.end_time == schedule_entry2.end_time
+
+
+def test_outlet_schedule_entry_remove(outlet_schedule_data, sispy):
+    schedule = OutletSchedule(outlet_schedule_data, sispy)
+
+    schedule.remove_entry()
+    assert len(schedule.entries) == 1
+
+    # make sure we removed the correct one ;-)
+    entry1 = schedule.entries[0]
+    assert entry1.switch_on is True
+    assert entry1.minutes_to_next_schedule_item == 3
+    assert entry1.start_time == time.strptime('2016-01-05 17:11:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert entry1.end_time == time.strptime('2016-01-05 17:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+
+
 def test_outlet_schedule_data(outlet_schedule_data, outlet_schedule_data_reset, sispy):
     schedule = OutletSchedule(outlet_schedule_data, sispy)
     begin_time = schedule.time_activated

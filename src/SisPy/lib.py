@@ -525,7 +525,24 @@ class OutletSchedule(object):
     @property
     def entries(self):
         """List of the OutletScheduleItem objects linked with the timer.
+
+           Do not manipulate the list itself directly (e.g. adding or removing entries) because this will lead to unpredictable results.
+           Use the add_entry() and remove_entry() methods for this.
         """
         return self._entries
+
+    def add_entry(self):
+        """Add an extra OutletScheduleItem object to the list at the last position.
+
+           This entry will have a length of 0 minutes.
+           This entry will set the outlet off.
+        """
+        new_entry = OutletScheduleItem(bytearray([0, 0]), self, len(self._entries))
+        self._entries.append(new_entry)
+
+    def remove_entry(self):
+        """Removes the last entry from the list.
+        """
+        self._entries.pop()
 
 # vim: set ai tabstop=4 shiftwidth=4 expandtab :
