@@ -489,7 +489,7 @@ def test_outlet_schedule_change_second(outlet_schedule_data, sispy):
     assert schedule_entry2.end_time == time.strptime('2016-01-05 21:24:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
 
-def test_outlet_schedule_data(outlet_schedule_data, sispy):
+def test_outlet_schedule_data(outlet_schedule_data, outlet_schedule_data_reset, sispy):
     schedule = OutletSchedule(outlet_schedule_data, sispy)
     begin_time = schedule.time_activated
 
@@ -499,6 +499,12 @@ def test_outlet_schedule_data(outlet_schedule_data, sispy):
     outlet_schedule_data[9] = 0
     schedule.periodic = False
     assert schedule._construct_data(begin_time) == outlet_schedule_data
+
+    schedule.reset()
+    # when writing, the rampup time is set to 0 is no entries are found
+    outlet_schedule_data_reset[36] = 0
+    outlet_schedule_data_reset[37] = 0
+    assert schedule._construct_data(begin_time) == outlet_schedule_data_reset
 
 
 def test_outlet_schedule_apply(sispy, outlet_schedule_data):

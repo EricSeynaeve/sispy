@@ -396,9 +396,12 @@ class OutletSchedule(object):
             self._rampup_minutes = 0
 
     def _construct_data(self, activation_time):
-        start_epoch = self._entries[0]._start_epoch()
         self._epoch_activated = calendar.timegm(activation_time)
-        self._rampup_minutes = int((start_epoch - self._epoch_activated) / 60)
+        if len(self._entries) > 0:
+            start_epoch = self._entries[0]._start_epoch()
+            self._rampup_minutes = int((start_epoch - self._epoch_activated) / 60)
+        else:
+            self._rampup_minutes = 0
 
         data = bytearray(range(38))
         struct.pack_into('<L', data, 0, int(self._epoch_activated))
@@ -426,6 +429,10 @@ class OutletSchedule(object):
     def apply(self):
         data = self._construct_data(self._get_current_time())
         self._sispy._usb_write(SisPy._OUTLET_SCHEDULE, self._nr, data)
+
+    def reset(self):
+        self._entries = []
+        self._periodic = True
 
     def _epoch_to_time(self, epoch):
         return time.gmtime(epoch)
