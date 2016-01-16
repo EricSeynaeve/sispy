@@ -1,0 +1,219 @@
+;-------------------------------------------------------------------
+Silvershield - Power Manager (SIS-PM) USB reports (API decription)	
+
+The property of Gembird Electronics Co, 2008
+
+//Retrieves or sets SIS-PM device ID 
+;-------------------------------------------------------------------
+Feature report 1 (set,get) : Device ID
+Data: 4 bytes
+;-------------------------------------------------------------------
+//Enables/disables SIS-PM buzzer. If buzzer is enabled it will notify
+//user when voltage alarm goes on for a socket or when timer schedule 
+//is broken (unsynchronized)
+;-------------------------------------------------------------------
+Feature report 2 (set,get): Buzzer enable/disable
+Data: 1 byte
+
+Bit 2: Buzzer control 
+       1=enable,0=disable
+;-------------------------------------------------------------------
+//Retrieves (get) socket#1 control and voltage status
+//Sets socket#1 control - switch on/switched off
+;-------------------------------------------------------------------
+Feature report 3 (set,get): Outlet 1 control and status
+Data: 1 byte
+
+Bit 0: Outlet 1 control  
+       1=switch on, 0=switch off
+Bit 1: Outlet status (get only) 
+       1=outlet voltage is present, 0=outlet voltage is absent 
+;-------------------------------------------------------------------
+//Retrieves (get) socket#2 control and voltage status
+//Sets socket#2 control - switch on/switched off
+;-------------------------------------------------------------------
+Feature report 6 (set,get): Outlet 2 control and status
+Data: 1 byte
+
+Bit 0: Outlet 2 control  
+       1=switch on, 0=switch off
+Bit 1: Outlet status (get only) 
+       1=outlet voltage is present, 0=outlet voltage is absent 
+;-------------------------------------------------------------------
+//Retrieves (get) socket#3 control and voltage status
+//Sets socket#3 control - switch on/switched off
+;-------------------------------------------------------------------
+Feature report 9 (set,get): Outlet 3 control and status
+Data: 1 byte
+
+Bit 0: Outlet 3 control  
+       1=switch on, 0=switch off
+Bit 1: Outlet status (get only) 
+       1=outlet voltage is present, 0=outlet voltage is absent 
+;-------------------------------------------------------------------
+//Retrieves (get) socket#3 control and voltage status
+//Sets socket#3 control - switch on/switched off
+;-------------------------------------------------------------------
+Feature report 12 (set,get): Outlet 4 control and status
+Data: 1 byte
+
+Bit 0: Outlet 4 control  
+       1=switch on, 0=switch off
+Bit 1: Outlet status (get only) 
+       1=outlet voltage is present, 0=outlet voltage is absent 
+;-------------------------------------------------------------------
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;
+;;;;;      Hardware schedule description and reports
+;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Timer schedule report for each socket of SIS-PM has the following structure:
+
+Report ID (1 lowest byte)
+	Reports #04,07,0A,0D for each socket correspondingly
+
+Time stamp in seconds - the system time when the schedule is being set (4 bytes).
+
+10 schedule entries, each of 2 bytes long (20 bytes).
+	Each 2-bytes entry has the following structure: 
+	1st byte     2nd byte
+	sdllllll     hhhhhhhh
+	s=switch control, 1=switch socket on,0=switch socket off
+	d="delay without switching" entry flag, d=1 - switch control isn't performed, d=0 - switch controlling entry
+	h=delay in minutes after switching, high byte
+	l=delay in minutes after switching, low byte
+
+
+Delay in minutes before first entry begins (2 bytes)
+	1st byte     2nd byte
+	llllllll     hhhhhhhh
+	h=delay in minutes after switching, high byte
+	l=delay in minutes after switching, low byte
+
+Totally 27 bytes.
+
+Note: Set report should be used to set schedule. Get report with the same as for settings schedule Report ID should be used to retrieve schedule
+Note: SIS-PM timer schedule entry performance time is specified relatively. SIS-PM is simply increasing it's timer until delay time before first entry begins elapsed. Then it performs first entry switch, zeros it's timer and begin increasing it till delay time after switching 1st entry elapsed.
+
+
+
+Get current schedule entry report for each socket of SIS-PM has the following structure:
+
+Report ID (lowest byte)
+	Reports #05,08,0B,0E for each socket correspondingly
+
+Schedule error state (1 byte)
+	This error state byte has meaningful "power fault during schedule performing flag" at 5th bit, other bits are not used.
+
+The entry (2 bytes)
+	Entry has the same structure as described above.
+
+Totally 4 bytes.
+
+
+;--------------------------------------------------------------------------------------
+;Silvershield - Power Manager (SIS-PM) USB reports explicative c++ code (short version)	
+;
+;The property of Gembird Electronics Ltd., 2007
+;--------------------------------------------------------------------------------------
+
+/*******************************************************************************/
+/*In the code below SIS-PM_HidDevice refers to HidDeviceObject handle of SIS-PM*/
+/*******************************************************************************/
+
+#define S_SIZE                      10
+#define S_RELEASE_TIME				0x3FFF
+
+struct ENTRY
+{
+	BOOL bSwitchState;
+	BOOL bSkipControl;
+	UINT nReleaseTime;
+};
+
+struct SCHEDULE
+{
+	CTime tStartup;
+	UINT nOffsetTime;
+	ENTRY entries[S_SIZE];
+	UINT nCurrentEntry;
+	UINT nTimeLeft;
+};
+
+
+BOOL SetSchedule(int nSocket, const SCHEDULE& schedule)
+{
+	BYTE out_buffer[1+4+S_SIZE*2+2];
+	out_buffer[0] = 4 + 3*nSocket;
+
+	time_t t = schedule.tStartup.GetTime();
+	memcpy(out_buffer+1, &t, 4);
+
+	for(int i = 0; i < S_SIZE; i++)
+	{
+		((WORD*)(out_buffer+1+4))[i] =
+			(schedule.entries[i].bSwitchState ? (S_RELEASE_TIME+1)*2 : 0) |
+			(schedule.entries[i].bSkipControl ? S_RELEASE_TIME+1 : 0) |
+			schedule.entries[i].nReleaseTime & S_RELEASE_TIME;
+	}
+
+	((WORD*)(out_buffer+1+4))[S_SIZE] = schedule.nOffsetTime + ((t%60) ? 1 : 0);
+
+	return HidD_SetFeature(SIS-PM_HidDevice, out_buffer, sizeof(out_buffer));
+}
+
+BOOL GetSchedule(int nSocket, SCHEDULE& schedule)
+{
+
+	BYTE in_buffer[1+4+S_SIZE*2+2]; 
+	in_buffer[0] = 4 + 3*nSocket;
+
+	
+	if(!HidD_GetFeature(SIS-PM_HidDevice, in_buffer, sizeof(in_buffer))) return FALSE;
+	
+
+	time_t t;
+	memcpy(&t, in_buffer+1, 4);
+	schedule.tStartup = t;
+
+	for(int i = 0; i < S_SIZE; i++)
+	{
+		schedule.entries[i].bSwitchState = ((WORD*)(in_buffer+1+4))[i] & ((S_RELEASE_TIME+1)*2) ? TRUE : FALSE;
+		schedule.entries[i].bSkipControl = ((WORD*)(in_buffer+1+4))[i] & (S_RELEASE_TIME+1) ? TRUE : FALSE;
+		schedule.entries[i].nReleaseTime = ((WORD*)(in_buffer+1+4))[i] & S_RELEASE_TIME;
+	}
+
+	schedule.nOffsetTime = ((WORD*)(in_buffer+1+4))[S_SIZE] - ((t%60) ? 1 : 0);
+
+	if(!GetCurrentScheduleEntry(nSocket, schedule.nCurrentEntry, schedule.nTimeLeft)) return FALSE;
+
+	return TRUE;
+}
+
+BOOL GetCurrentScheduleEntry(int nSocket, UINT& nEntryNumber, UINT& nTimeLeft)
+{
+	
+	BYTE in_buffer[4];
+	in_buffer[0] = 5 + 3*nSocket : 3;
+	if(!HidD_GetFeature(SIS-PM_HidDevice, in_buffer, sizeof(in_buffer))) return FALSE;
+
+	nEntryNumber = (in_buffer[1] & 0x7F) != S_SIZE ? (in_buffer[1] & 0x7F) : -1;
+	nTimeLeft = *((WORD*)(in_buffer+2)) & ((in_buffer[1] & 0x7F) != S_SIZE ? S_RELEASE_TIME : 0xFFFF);
+
+	return TRUE;
+}
+
+
+BOOL SISPM::GetScheduleErrorState(int nSocket, BOOL& bScheduleErrorState)
+{
+	BYTE in_buffer[4] = { 5 + 3*nSocket };
+
+	if(!HidD_GetFeature(SIS-PM_HidDevice, in_buffer, sizeof(in_buffer))) return FALSE;
+
+        bScheduleErrorState = in_buffer[1] & 0x80 ? TRUE : FALSE;
+
+	return TRUE;
+}
+
