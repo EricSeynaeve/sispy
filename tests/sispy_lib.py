@@ -107,6 +107,7 @@ def sispy(device):
 
         def _get_device(self):
             return device
+
     return MockSisPy()
 
 
@@ -309,8 +310,8 @@ def test_outlet_current_schedule_item_ok_off_done(outlet_current_schedule_item_d
 
 # test outlet schedule class
 
-def test_outlet_schedule(outlet_schedule_data):
-    schedule = OutletSchedule(outlet_schedule_data)
+def test_outlet_schedule(outlet_schedule_data, sispy):
+    schedule = OutletSchedule(outlet_schedule_data, sispy)
 
     # time.strptime doesn't take the timezone information into account. It just assumes it's alwasy in UTC
     # Need to compensate for this in the tests
@@ -344,8 +345,8 @@ def test_outlet_schedule(outlet_schedule_data):
         schedule.periodic = 1
 
 
-def test_outlet_schedule_non_periodic(outlet_schedule_data_non_periodic):
-    schedule = OutletSchedule(outlet_schedule_data_non_periodic)
+def test_outlet_schedule_non_periodic(outlet_schedule_data_non_periodic, sispy):
+    schedule = OutletSchedule(outlet_schedule_data_non_periodic, sispy)
 
     # time.strptime doesn't take the timezone information into account. It just assumes it's alwasy in UTC
     # Need to compensate for this in the tests
@@ -371,8 +372,8 @@ def test_outlet_schedule_non_periodic(outlet_schedule_data_non_periodic):
     assert entry2.end_time == time.strptime('2016-01-05 17:16:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
 
-def test_outlet_schedule_reset(outlet_schedule_data_reset):
-    schedule = OutletSchedule(outlet_schedule_data_reset)
+def test_outlet_schedule_reset(outlet_schedule_data_reset, sispy):
+    schedule = OutletSchedule(outlet_schedule_data_reset, sispy)
 
     # time.strptime doesn't take the timezone information into account. It just assumes it's alwasy in UTC
     # Need to compensate for this in the tests
@@ -386,8 +387,8 @@ def test_outlet_schedule_reset(outlet_schedule_data_reset):
     assert len(schedule.entries) == 0
 
 
-def test_outlet_schedule_vanilla(outlet_schedule_data_vanilla):
-    schedule = OutletSchedule(outlet_schedule_data_vanilla)
+def test_outlet_schedule_vanilla(outlet_schedule_data_vanilla, sispy):
+    schedule = OutletSchedule(outlet_schedule_data_vanilla, sispy)
 
     assert schedule.time_activated == time.strptime('1970-01-01 00:00:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule.rampup_minutes == 0
@@ -399,8 +400,8 @@ def test_outlet_schedule_vanilla(outlet_schedule_data_vanilla):
     assert len(schedule.entries) == 0
 
 
-def test_outlet_schedule_change_first_entry(outlet_schedule_data):
-    schedule = OutletSchedule(outlet_schedule_data)
+def test_outlet_schedule_change_first_entry(outlet_schedule_data, sispy):
+    schedule = OutletSchedule(outlet_schedule_data, sispy)
 
     schedule_entry1 = schedule.entries[0]
 
@@ -460,8 +461,8 @@ def test_outlet_schedule_change_first_entry(outlet_schedule_data):
     assert schedule_entry1.switch_on is False
 
 
-def test_outlet_schedule_change_second(outlet_schedule_data):
-    schedule = OutletSchedule(outlet_schedule_data)
+def test_outlet_schedule_change_second(outlet_schedule_data, sispy):
+    schedule = OutletSchedule(outlet_schedule_data, sispy)
 
     schedule_entry2 = schedule.entries[1]
 
@@ -488,8 +489,8 @@ def test_outlet_schedule_change_second(outlet_schedule_data):
     assert schedule_entry2.end_time == time.strptime('2016-01-05 21:24:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
 
-def test_outlet_schedule_apply(outlet_schedule_data):
-    schedule = OutletSchedule(outlet_schedule_data)
+def test_outlet_schedule_data(outlet_schedule_data, sispy):
+    schedule = OutletSchedule(outlet_schedule_data, sispy)
     begin_time = schedule.time_activated
 
     assert schedule._construct_data(begin_time) == outlet_schedule_data
@@ -498,5 +499,18 @@ def test_outlet_schedule_apply(outlet_schedule_data):
     outlet_schedule_data[9] = 0
     schedule.periodic = False
     assert schedule._construct_data(begin_time) == outlet_schedule_data
+
+
+def test_outlet_schedule_apply(sispy, outlet_schedule_data):
+    schedule = sispy.outlets[0].schedule
+
+    begin_time = schedule.time_activated
+
+    schedule._get_current_time = lambda: begin_time
+
+    schedule.apply()
+    assert sispy._dev.send_meta == bytearray([0x21, 0x09, 0x04, 0x03, 0x00])
+    assert sispy._dev.send_data == bytearray([0x04]) + outlet_schedule_data
+
 
 # vim: set ai tabstop=4 shiftwidth=4 expandtab :

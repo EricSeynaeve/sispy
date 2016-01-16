@@ -60,6 +60,9 @@ class SisPy(object):
         if command == SisPy._OUTLET_STATUS:
             assert len(data) == 1
             report_nr = 0x03 + outlet_nr * 3
+        if command == SisPy._OUTLET_SCHEDULE:
+            assert len(data) == 38
+            report_nr = 0x04 + outlet_nr * 3
         data.insert(0, report_nr)
         bytes_written = self._dev.ctrl_transfer(request_type, request, 0x0300 + report_nr, 0, data, 500)
         assert bytes_written == len(data)
@@ -100,6 +103,7 @@ class Outlet(object):
     def __init__(self, nr, sispy):
         self._nr = nr
         self._sispy = sispy
+        self._schedule = None
 
     @property
     def switched_on(self):
@@ -126,8 +130,10 @@ class Outlet(object):
     def schedule(self):
         """Represent the hardware schedule of the outlet.
         """
-        data = self._sispy._usb_read(SisPy._OUTLET_SCHEDULE, self._nr)
-        return OutletSchedule(data)
+        if self._schedule is None:
+            data = self._sispy._usb_read(SisPy._OUTLET_SCHEDULE, self._nr)
+            self._schedule = OutletSchedule(data, self._sispy, self._nr)
+        return self._schedule
 
     @property
     def current_schedule_item(self):
@@ -364,8 +370,10 @@ class OutletSchedule(object):
 
        A schedule can be executed once or periodically.
     """
-    def __init__(self, data):
+    def __init__(self, data, sispy, outlet_nr=0):
         self._data = data
+        self._sispy = sispy
+        self._nr = outlet_nr
 
         self._parse_data(self._data)
 
@@ -411,6 +419,13 @@ class OutletSchedule(object):
             data[5 + i * 2] = 0x3f
             i += 1
         return data
+
+    def _get_current_time(self):  # pragma no cover
+        return time.gmtime()
+
+    def apply(self):
+        data = self._construct_data(self._get_current_time())
+        self._sispy._usb_write(SisPy._OUTLET_SCHEDULE, self._nr, data)
 
     def _epoch_to_time(self, epoch):
         return time.gmtime(epoch)
