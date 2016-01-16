@@ -387,6 +387,31 @@ class OutletSchedule(object):
             self._periodic = False
             self._rampup_minutes = 0
 
+    def _construct_data(self, activation_time):
+        start_epoch = self._entries[0]._start_epoch()
+        self._epoch_activated = calendar.timegm(activation_time)
+        self._rampup_minutes = int((start_epoch - self._epoch_activated) / 60)
+
+        data = bytearray(range(38))
+        struct.pack_into('<L', data, 0, int(self._epoch_activated))
+        struct.pack_into('<H', data, 36, self._rampup_minutes)
+
+        # write out the schedule entries
+        i = 0
+        while i < 15 and i < len(self._entries):
+            data[4 + i * 2] = self._entries[i]._construct_data()[0]
+            data[5 + i * 2] = self._entries[i]._construct_data()[1]
+            i += 1
+        if self.periodic is False:
+            data[4 + i * 2] = 0
+            data[5 + i * 2] = 0
+            i += 1
+        while i < 16:
+            data[4 + i * 2] = 0xff
+            data[5 + i * 2] = 0x3f
+            i += 1
+        return data
+
     def _epoch_to_time(self, epoch):
         return time.gmtime(epoch)
 
@@ -416,13 +441,21 @@ class OutletSchedule(object):
     def periodic(self):
         """Indicates whether the schedule is period or not.
 
+           Change this to toggle between a periodic timer or not.
+
            This is True for a periodic schedule and False otherwise.
         """
         return self._periodic
 
+    @periodic.setter
+    def periodic(self, value):
+        if not isinstance(value, bool):
+            raise TypeError("Peridioc flag should be a boolean, not a " + value.__class__.__name__)
+        self._periodic = value
+
     @property
     def periodicity_minutes(self):
-        """If a schedule is periodic, the number of minutes before it repeats itself.
+        """If a schedule is periodic, the number of minutes before the schedule repeats itself.
            Otherise, None.
 
            This is an integer with the number of minutes.
@@ -434,8 +467,8 @@ class OutletSchedule(object):
 
     @property
     def schedule_minutes(self):
-        """If a schedule is not periodic, the time the schedule start will run.
-           If a schedule is periodic, None.
+        """If a schedule is not periodic, the number of minutes the schedule will run, excluding the rampup time.
+           Otherwise, None.
 
            This is an integer with the number of minutes.
         """

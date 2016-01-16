@@ -335,6 +335,14 @@ def test_outlet_schedule(outlet_schedule_data):
     assert entry2.start_time == time.strptime('2016-01-05 17:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert entry2.end_time == time.strptime('2016-01-05 17:16:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
+    schedule.periodic = False
+    assert schedule.periodic is False
+    assert schedule.periodicity_minutes is None
+    assert schedule.schedule_minutes == 5
+
+    with pytest.raises(TypeError):
+        schedule.periodic = 1
+
 
 def test_outlet_schedule_non_periodic(outlet_schedule_data_non_periodic):
     schedule = OutletSchedule(outlet_schedule_data_non_periodic)
@@ -478,5 +486,17 @@ def test_outlet_schedule_change_second(outlet_schedule_data):
     assert schedule_entry2.start_time == time.strptime('2016-01-05 21:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule_entry2.minutes_to_next_schedule_item == 10
     assert schedule_entry2.end_time == time.strptime('2016-01-05 21:24:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+
+
+def test_outlet_schedule_apply(outlet_schedule_data):
+    schedule = OutletSchedule(outlet_schedule_data)
+    begin_time = schedule.time_activated
+
+    assert schedule._construct_data(begin_time) == outlet_schedule_data
+
+    outlet_schedule_data[8] = 0
+    outlet_schedule_data[9] = 0
+    schedule.periodic = False
+    assert schedule._construct_data(begin_time) == outlet_schedule_data
 
 # vim: set ai tabstop=4 shiftwidth=4 expandtab :
