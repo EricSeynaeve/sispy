@@ -6,6 +6,10 @@ After receiving the EG-PMS2, I found out wine does not support USB drivers. The 
 
 When contacting the distributor, they provided me with some information on programming the hardware schedules. Using information + some reverse engineering (the doc obtained contained some errors), I managed to come up with a, IMHO, intuitive python library.
 
+## Dependencies
+
+Requires the pyusb library for working with the power switch through USB. The advantage of pyusb is that you don't have to worry which particular USB library is installed (libusb 0.1, libusb 1.0, libusbx, libusb-win32 or OpenUSB).
+
 ## Usage example
 
 Before running this example, make sure the power switch is connected to the computer.
