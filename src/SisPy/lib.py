@@ -415,10 +415,11 @@ class OutletSchedule(object):
             self._rampup_minutes = 0
 
     def _construct_data(self, activation_time):
-        self._epoch_activated = calendar.timegm(activation_time)
+        new_epoch_activated = calendar.timegm(activation_time)
         if len(self._entries) > 0:
             start_epoch = self._entries[0]._start_epoch()
-            self._rampup_minutes = int((start_epoch - self._epoch_activated) / 60)
+            self._rampup_minutes = int((start_epoch - new_epoch_activated) / 60)
+            self._epoch_activated = new_epoch_activated
         else:
             self._rampup_minutes = 0
 

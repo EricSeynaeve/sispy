@@ -9,6 +9,7 @@ from SisPy.lib import OutletScheduleItem
 
 import pytest
 import time
+import calendar
 
 # test data was obtained in CET
 time.altzone = -7200
@@ -575,7 +576,28 @@ def test_outlet_schedule_data(outlet_schedule_data, outlet_schedule_data_reset, 
     assert schedule._construct_data(begin_time) == outlet_schedule_data_reset
 
 
-def test_outlet_schedule_apply(sispy, outlet_schedule_data):
+def test_outlet_schedule_apply_activated_change(sispy):
+    schedule = sispy.outlets[0].schedule
+
+    begin_time = schedule.time_activated
+    rampup_minutes = schedule.rampup_minutes
+
+    schedule._get_current_time = lambda: begin_time
+
+    schedule.apply()
+    assert schedule.time_activated == begin_time
+    assert schedule.rampup_minutes == rampup_minutes
+
+    new_begin_time = time.gmtime(calendar.timegm(begin_time) - 5 * 3600)
+    schedule._get_current_time = lambda: new_begin_time
+    new_rampup_minutes = rampup_minutes + 5 * 60
+
+    schedule.apply()
+    assert schedule.time_activated == new_begin_time
+    assert schedule.rampup_minutes == new_rampup_minutes
+
+
+def test_outlet_schedule_apply_data(sispy, outlet_schedule_data):
     schedule = sispy.outlets[0].schedule
 
     begin_time = schedule.time_activated
