@@ -10,6 +10,20 @@ import calendar
 import usb
 
 
+def _min2human(minutes):
+    days = int(minutes / (60 * 24))
+    minutes = minutes - days * 60 * 24
+    hours = int(minutes / 60)
+    minutes = minutes - hours * 60
+
+    string = str(minutes) + "m"
+    if hours > 0 or days > 0:
+        string = str(hours) + "h" + string
+    if days > 0:
+        string = str(days) + "d" + string
+    return string
+
+
 class SisPy(object):
     """Represent the power supply.
 
@@ -362,6 +376,12 @@ class OutletScheduleItem(object):
 
         self.minutes_to_next_schedule_item = int((end_epoch - self._start_epoch()) / 60)
 
+    def __str__(self):
+        return "switch on: " + str(self.switch_on) + \
+               ", start time: " + time.strftime("%Y-%m-%d %H:%M:%S UTC", self.start_time) + \
+               ", time to next schedule item: " + _min2human(self.minutes_to_next_schedule_item) + \
+               ", end time: " + time.strftime("%Y-%m-%d %H:%M:%S UTC", self.end_time)
+
 
 class OutletSchedule(object):
     """Represents the hardware schedule for an outlet. It contains a list of (max 16) schedules, the time to wait before starting the
@@ -543,5 +563,18 @@ class OutletSchedule(object):
         """Removes the last entry from the list.
         """
         self._entries.pop()
+
+    def __str__(self):
+        string = "Time activated: " + time.strftime("%Y-%m-%d %H:%M:%S UTC", self.time_activated) + \
+            ", rampup time: " + _min2human(self.rampup_minutes) + \
+            ", periodic: " + str(self.periodic)
+        if self.periodic is True:
+            string += ", periodicity: " + _min2human(self.periodicity_minutes) + " min."
+        else:
+            string += ", total time: " + _min2human(self.schedule_minutes) + " min." + \
+                ", end time: " + time.strftime("%Y-%m-%d %H:%M:%S UTC", self.end_time)
+        for i in range(len(self.entries)):
+            string += ", Entry " + str(i) + ": [" + str(self.entries[i]) + "]"
+        return string
 
 # vim: set ai tabstop=4 shiftwidth=4 expandtab :

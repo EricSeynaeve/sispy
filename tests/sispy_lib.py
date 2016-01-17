@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+from SisPy.lib import _min2human
 from SisPy.lib import SisPy
 from SisPy.lib import Outlet
 from SisPy.lib import OutletCurrentScheduleItem
@@ -310,6 +311,16 @@ def test_outlet_current_schedule_item_ok_off_done(outlet_current_schedule_item_d
 
 # test outlet schedule class
 
+def test_min2human():
+    assert _min2human(3) == "3m"
+    assert _min2human(30) == "30m"
+    assert _min2human(60) == "1h0m"
+    assert _min2human(90) == "1h30m"
+    assert _min2human(601) == "10h1m"
+    assert _min2human(24 * 60) == "1d0h0m"
+    assert _min2human(25 * 60 + 5) == "1d1h5m"
+
+
 def test_outlet_schedule(outlet_schedule_data, sispy):
     schedule = OutletSchedule(outlet_schedule_data, sispy)
 
@@ -335,6 +346,16 @@ def test_outlet_schedule(outlet_schedule_data, sispy):
     assert entry2.minutes_to_next_schedule_item == 2
     assert entry2.start_time == time.strptime('2016-01-05 17:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert entry2.end_time == time.strptime('2016-01-05 17:16:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+
+    assert str(schedule) == "Time activated: 2016-01-05 17:10:35 UTC, rampup time: 1m, periodic: True, periodicity: 5m min., Entry 0: [switch on: True, start time: 2016-01-05 17:11:35 UTC, time to next schedule item: 3m, end time: 2016-01-05 17:14:35 UTC], Entry 1: [switch on: False, start time: 2016-01-05 17:14:35 UTC, time to next schedule item: 2m, end time: 2016-01-05 17:16:35 UTC]"
+
+
+def test_outlet_schedule_change_periodicity(outlet_schedule_data, sispy):
+    schedule = OutletSchedule(outlet_schedule_data, sispy)
+
+    assert schedule.periodic is True
+    assert schedule.periodicity_minutes == 5
+    assert schedule.schedule_minutes is None
 
     schedule.periodic = False
     assert schedule.periodic is False
@@ -371,6 +392,8 @@ def test_outlet_schedule_non_periodic(outlet_schedule_data_non_periodic, sispy):
     assert entry2.start_time == time.strptime('2016-01-05 17:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert entry2.end_time == time.strptime('2016-01-05 17:16:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
+    assert str(schedule) == "Time activated: 2016-01-05 17:10:35 UTC, rampup time: 1m, periodic: False, total time: 5m min., end time: 2016-01-05 17:16:35 UTC, Entry 0: [switch on: True, start time: 2016-01-05 17:11:35 UTC, time to next schedule item: 3m, end time: 2016-01-05 17:14:35 UTC], Entry 1: [switch on: False, start time: 2016-01-05 17:14:35 UTC, time to next schedule item: 2m, end time: 2016-01-05 17:16:35 UTC]"
+
 
 def test_outlet_schedule_reset(outlet_schedule_data_reset, sispy):
     schedule = OutletSchedule(outlet_schedule_data_reset, sispy)
@@ -386,6 +409,8 @@ def test_outlet_schedule_reset(outlet_schedule_data_reset, sispy):
     assert schedule.end_time == time.strptime('2016-01-05 17:10:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert len(schedule.entries) == 0
 
+    assert str(schedule) == "Time activated: 2016-01-05 17:10:35 UTC, rampup time: 0m, periodic: False, total time: 0m min., end time: 2016-01-05 17:10:35 UTC"
+
 
 def test_outlet_schedule_vanilla(outlet_schedule_data_vanilla, sispy):
     schedule = OutletSchedule(outlet_schedule_data_vanilla, sispy)
@@ -398,6 +423,8 @@ def test_outlet_schedule_vanilla(outlet_schedule_data_vanilla, sispy):
     assert schedule.schedule_minutes == 0
     assert schedule.end_time == time.strptime('1970-01-01 00:00:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert len(schedule.entries) == 0
+
+    assert str(schedule) == "Time activated: 1970-01-01 00:00:00 UTC, rampup time: 0m, periodic: False, total time: 0m min., end time: 1970-01-01 00:00:00 UTC"
 
 
 def test_outlet_schedule_change_first_entry(outlet_schedule_data, sispy):
