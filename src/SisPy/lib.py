@@ -328,7 +328,6 @@ class OutletScheduleItem(object):
             if new_start_epoch < self._schedule._start_epoch():
                 raise ValueError("Start time of first schedule item needs to be after the start time of the outlet schedule.")
             self._schedule._rampup_minutes = int((new_start_epoch - self._schedule._start_epoch()) / 60)
-            print self._schedule._rampup_minutes
             # ensure there is always a whole number of minutes between the times.
             self._schedule._epoch_activated = new_start_epoch - self._schedule._rampup_minutes * 60
         else:
