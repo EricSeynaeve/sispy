@@ -442,9 +442,6 @@ def test_outlet_schedule_change_first_entry(outlet_schedule_data, sispy):
     with pytest.raises(TypeError):
         schedule_entry1.start_time = 'abc'
     assert schedule_entry1.start_time == time.strptime('2016-01-05 21:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
-    with pytest.raises(ValueError):
-        schedule_entry1.start_time = time.strptime('2016-01-05 17:12:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
-    assert schedule_entry1.start_time == time.strptime('2016-01-05 21:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule_entry1._construct_data() == bytearray([0x3, 0x80])
 
     schedule_entry1.minutes_to_next_schedule_item = 8 * 60
@@ -486,6 +483,22 @@ def test_outlet_schedule_change_first_entry(outlet_schedule_data, sispy):
     with pytest.raises(TypeError):
         schedule_entry1.switch_on = 1
     assert schedule_entry1.switch_on is False
+
+
+def test_outlet_schedule_change_first_entry_start_time(outlet_schedule_data, sispy):
+    schedule = OutletSchedule(outlet_schedule_data, sispy)
+
+    schedule_entry1 = schedule.entries[0]
+
+    assert schedule.time_activated == time.strptime('2016-01-05 17:10:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+    assert schedule_entry1.start_time == time.strptime('2016-01-05 17:11:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
+
+    # error should be raised if we assign a time before the last activation time
+    with pytest.raises(ValueError):
+        schedule_entry1.start_time = time.strptime('2016-01-05 17:00:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+
+    # but not if it's between the last activation time and the start time
+    schedule_entry1.start_time = time.strptime('2016-01-05 17:12:30 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
 
 def test_outlet_schedule_change_second(outlet_schedule_data, sispy):

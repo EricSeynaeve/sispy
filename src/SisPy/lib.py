@@ -339,7 +339,7 @@ class OutletScheduleItem(object):
             raise TypeError("Can't us a " + new_time.__class__.__name__ + " type to set the time.")
 
         if self._item_nr == 0:
-            if new_start_epoch < self._schedule._start_epoch():
+            if new_start_epoch < self._schedule._epoch_activated:
                 raise ValueError("Start time of first schedule item needs to be after the start time of the outlet schedule.")
             self._schedule._rampup_minutes = int((new_start_epoch - self._schedule._start_epoch()) / 60)
             # ensure there is always a whole number of minutes between the times.
