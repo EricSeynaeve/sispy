@@ -45,6 +45,7 @@ my_schedule.apply()
 
 - only tested on the USB version EG-PMS2
 - all times are entered and received in UTC !
+- will only take the first power switch found in the USB devices walk through.
 
 ## See also:
 
