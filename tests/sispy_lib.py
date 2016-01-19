@@ -287,11 +287,11 @@ def test_outlets_current_schedule(sispy):
 # test outlet current schedule item class
 
 def _test_outlet_current_schedule(current_schedule, timing_error=False, switched_it_on=False, minutes_to_next_schedule_item=2,
-                                  next_schedule_nr=1, sequence_rampup=False, sequence_done=False):
+                                  current_schedule_nr=1, sequence_rampup=False, sequence_done=False):
     assert current_schedule.timing_error == timing_error
     assert current_schedule.switched_it_on == switched_it_on
     assert current_schedule.minutes_to_next_schedule_item == minutes_to_next_schedule_item
-    assert current_schedule.next_schedule_nr == next_schedule_nr
+    assert current_schedule.current_schedule_nr == current_schedule_nr
     assert current_schedule.sequence_rampup == sequence_rampup
     assert current_schedule.sequence_done == sequence_done
 
@@ -318,12 +318,12 @@ def test_outlet_current_schedule_item_ok_on(outlet_current_schedule_item_data_ok
 
 def test_outlet_current_schedule_item_ok_off_rampup(outlet_current_schedule_item_data_ok_off_rampup):
     current_schedule = OutletCurrentScheduleItem(outlet_current_schedule_item_data_ok_off_rampup)
-    _test_outlet_current_schedule(current_schedule, sequence_rampup=True, next_schedule_nr=0)
+    _test_outlet_current_schedule(current_schedule, sequence_rampup=True, current_schedule_nr=None)
 
 
 def test_outlet_current_schedule_item_ok_off_done(outlet_current_schedule_item_data_ok_off_done):
     current_schedule = OutletCurrentScheduleItem(outlet_current_schedule_item_data_ok_off_done)
-    _test_outlet_current_schedule(current_schedule, sequence_done=True, minutes_to_next_schedule_item=0, next_schedule_nr=2)
+    _test_outlet_current_schedule(current_schedule, sequence_done=True, minutes_to_next_schedule_item=0, current_schedule_nr=2)
 
 
 # test outlet schedule class

@@ -186,16 +186,16 @@ class OutletCurrentScheduleItem(object):
         self._data = data
 
         self._timing_error = (data[0] & 0x80 == 0x80)
-        self._next_schedule_nr = (data[0] & 0x7f)
+        self._current_schedule_nr = (data[0] & 0x7f)
         value = struct.unpack('<H', data[1:])[0]
 
-        if self._next_schedule_nr == 0x10:
+        if self._current_schedule_nr == 0x10:
             # We're still waiting for the initial delay to finish
-            self._next_schedule_nr = 0
+            self._current_schedule_nr = None
             self._sequence_rampup = True
             self._minutes_to_next_schedule_item = value
         else:
-            self._next_schedule_nr = (data[0] & 0x7f)
+            self._current_schedule_nr = (data[0] & 0x7f)
             self._sequence_rampup = False
             self._minutes_to_next_schedule_item = (value & 0x3FFF)
 
@@ -219,12 +219,13 @@ class OutletCurrentScheduleItem(object):
         return self._sequence_rampup
 
     @property
-    def next_schedule_nr(self):
-        """Schedule number of the next schedule in the list to execute.
+    def current_schedule_nr(self):
+        """Schedule number of the current schedule in the list to execute.
 
            An integer from 0 onwards.
+           None if we're still in rampup state.
         """
-        return self._next_schedule_nr
+        return self._current_schedule_nr
 
     @property
     def switched_it_on(self):
