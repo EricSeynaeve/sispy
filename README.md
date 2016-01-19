@@ -15,6 +15,8 @@ Requires the pyusb library for working with the power switch through USB. The ad
 Before running this example, make sure the power switch is connected to the computer.
 
 ```python
+import time
+
 from SisPy.lib import SisPy
 
 sispy = SisPy()

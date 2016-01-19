@@ -17,7 +17,7 @@ my_schedule.reset()
 my_schedule.periodic = True
 my_schedule.add_entry()
 # adjust this time to your own liking
-my_schedule.entries[0].start_time = time.strptime('2016-01-19 20:30:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
+my_schedule.entries[0].start_time = time.strptime('2016-01-17 20:30:00 UTC', '%Y-%m-%d %H:%M:%S %Z')
 # switch the outlet off for 14 hours
 my_schedule.entries[0].switch_on = False
 my_schedule.entries[0].minutes_to_next_schedule_entry = 14 * 60
