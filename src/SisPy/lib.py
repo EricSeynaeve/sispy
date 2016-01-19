@@ -48,7 +48,7 @@ class SisPy(object):
     _ID = 1
     _OUTLET_STATUS = 3
     _OUTLET_SCHEDULE = 4
-    _OUTLET_CURRENT_SCHEDULE_ITEM = 5
+    _OUTLET_CURRENT_SCHEDULE_ENTRY = 5
 
     def __init__(self):
         self._dev = self._get_device()
@@ -77,7 +77,7 @@ class SisPy(object):
         if command == SisPy._OUTLET_SCHEDULE:
             report_nr = 0x04 + outlet_nr * 3
             data = self._dev.ctrl_transfer(request_type, request, 0x0300 + report_nr, 0, 38 + 1, 500)
-        if command == SisPy._OUTLET_CURRENT_SCHEDULE_ITEM:
+        if command == SisPy._OUTLET_CURRENT_SCHEDULE_ENTRY:
             report_nr = 0x05 + outlet_nr * 3
             data = self._dev.ctrl_transfer(request_type, request, 0x0300 + report_nr, 0, 3 + 1, 500)
         assert data[0] == report_nr
@@ -166,19 +166,19 @@ class Outlet(object):
         return self._schedule
 
     @property
-    def current_schedule_item(self):
-        """Represent the current schedule item that's being executed.
+    def current_schedule_entry(self):
+        """Represent the current schedule entry that's being executed.
         """
-        data = self._sispy._usb_read(SisPy._OUTLET_CURRENT_SCHEDULE_ITEM, self._nr)
-        return OutletCurrentScheduleItem(data)
+        data = self._sispy._usb_read(SisPy._OUTLET_CURRENT_SCHEDULE_ENTRY, self._nr)
+        return OutletCurrentScheduleEntry(data)
 
 
-class OutletCurrentScheduleItem(object):
+class OutletCurrentScheduleEntry(object):
     """Indicates where the outlet currently is in the execution of the schedule.
        This is continuously updated by the outlet. Also, this information is only informational, nothing can be set.
 
-       It will indicate whether the outlet was switched on at the beginning of the current outlet schedule item,
-       how long until the next outlet schedule item, where we are in the schedule list and whether a time error status is detected.
+       It will indicate whether the outlet was switched on at the beginning of the current outlet schedule entry,
+       how long until the next outlet schedule entry, where we are in the schedule list and whether a time error status is detected.
 
        The latter can happen when the power strip is set without current for a long time.
     """
@@ -193,14 +193,14 @@ class OutletCurrentScheduleItem(object):
             # We're still waiting for the initial delay to finish
             self._current_schedule_nr = None
             self._sequence_rampup = True
-            self._minutes_to_next_schedule_item = value
+            self._minutes_to_next_schedule_entry = value
         else:
             self._current_schedule_nr = (data[0] & 0x7f)
             self._sequence_rampup = False
-            self._minutes_to_next_schedule_item = (value & 0x3FFF)
+            self._minutes_to_next_schedule_entry = (value & 0x3FFF)
 
         self._switched_it_on = (value & 0x8000 == 0x8000)
-        self._sequence_done = (self._minutes_to_next_schedule_item == 0)
+        self._sequence_done = (self._minutes_to_next_schedule_entry == 0)
 
     @property
     def timing_error(self):
@@ -237,13 +237,13 @@ class OutletCurrentScheduleItem(object):
         return self._switched_it_on
 
     @property
-    def minutes_to_next_schedule_item(self):
-        """Number of minutes still to wait before starting the next schedule item.
+    def minutes_to_next_schedule_entry(self):
+        """Number of minutes still to wait before starting the next schedule entry.
            This is updated by the power strip itself.
 
            An integer with the number of minutes.
         """
-        return self._minutes_to_next_schedule_item
+        return self._minutes_to_next_schedule_entry
 
     @property
     def sequence_done(self):
@@ -255,15 +255,15 @@ class OutletCurrentScheduleItem(object):
         return self._sequence_done
 
 
-class OutletScheduleItem(object):
-    """Represents an item in the schedule by it's status at the start and the time before the next item is executed.
+class OutletScheduleEntry(object):
+    """Represents an entry in the schedule by it's status at the start and the time before the next entry is executed.
 
        This can be read and manipulated in different ways:
        - (start time, wait time in minutes)
        - (end time, wait time in minutes)
        - (start time, end time)
 
-       With a manipulation in one item, the remaining will be set accordingly.
+       With a manipulation in one entry, the remaining will be set accordingly.
        Manipulating the start time will also change the end time.
        Manipulating the wait time will also change the end time.
        Manipulating the end time will also adjust the wait time.
@@ -273,22 +273,22 @@ class OutletScheduleItem(object):
        - if the start time is 09:30 and the end time is set at 09:50, the wait time will be 20 minutes.
        - if the wait time is 15 minutes and the start time is set at 09:15, the end time will be 09:30.
 
-       The start time will always take into account the wait times if the previous items (if any).
+       The start time will always take into account the wait times if the previous entries (if any).
     """
-    def __init__(self, data, schedule, item_nr):
+    def __init__(self, data, schedule, entry_nr):
         self._data = data
         self._schedule = schedule
-        self._item_nr = item_nr
+        self._entry_nr = entry_nr
 
         self._parse_data(self._data)
 
     def _parse_data(self, data):
         value = struct.unpack('<H', data)[0]
         self._switch_on = (value & 0x8000 == 0x8000)
-        self._minutes_to_next_schedule_item = (value & 0x3FFF)
+        self._minutes_to_next_schedule_entry = (value & 0x3FFF)
 
     def _construct_data(self):
-        value = self._minutes_to_next_schedule_item
+        value = self._minutes_to_next_schedule_entry
         if self._switch_on is True:
             value |= 0x8000
         data = bytearray([0, 0])
@@ -297,7 +297,7 @@ class OutletScheduleItem(object):
 
     @property
     def switch_on(self):
-        """True when the outlet was set on at the start of this schedule item. False other wise.
+        """True when the outlet was set on at the start of this schedule entry. False other wise.
 
            Beware, the current status could be different due to other manipulations after that time.
         """
@@ -308,37 +308,37 @@ class OutletScheduleItem(object):
         if isinstance(new_setting, bool):
             self._switch_on = new_setting
         else:
-            raise TypeError("Can't set the switch status in schedule item with a " + new_setting.__class__.__name__)
+            raise TypeError("Can't set the switch status in schedule entry with a " + new_setting.__class__.__name__)
 
     @property
-    def minutes_to_next_schedule_item(self):
-        """The set wait time in minutes after this schedule item was started to start the next one.
+    def minutes_to_next_schedule_entry(self):
+        """The set wait time in minutes after this schedule entry was started to start the next one.
 
            When set, this will adjust the end time of this schedule.
 
            This is always an int indicating the number of minutes.
         """
-        return self._minutes_to_next_schedule_item
+        return self._minutes_to_next_schedule_entry
 
-    @minutes_to_next_schedule_item.setter
-    def minutes_to_next_schedule_item(self, new_minutes):
+    @minutes_to_next_schedule_entry.setter
+    def minutes_to_next_schedule_entry(self, new_minutes):
         if isinstance(new_minutes, int):
             if new_minutes < 0:
                 raise ValueError("Can't set a number of minutes < 0")
             if new_minutes > 0x3FF:
                 raise ValueError("Number of minutes to set too big (> 16383 (~ 273+ hourse or ~ 11+ days))")
 
-            self._minutes_to_next_schedule_item = new_minutes
+            self._minutes_to_next_schedule_entry = new_minutes
         else:
             raise TypeError("Can't use a " + new_minutes.__class__.__name__ + " to set the number of minutes.")
 
     def _start_epoch(self):
-        delay_minutes = self._schedule._add_schedule_minutes(self._schedule._entries[:self._item_nr])
+        delay_minutes = self._schedule._add_schedule_minutes(self._schedule._entries[:self._entry_nr])
         return self._schedule._start_epoch() + delay_minutes * 60
 
     @property
     def start_time(self):
-        """Start time of this schedule item.
+        """Start time of this schedule entry.
 
            If set, this will automatically also adjust the end_time.
 
@@ -355,28 +355,28 @@ class OutletScheduleItem(object):
         else:
             raise TypeError("Can't us a " + new_time.__class__.__name__ + " type to set the time.")
 
-        if self._item_nr == 0:
+        if self._entry_nr == 0:
             if new_start_epoch < self._schedule._epoch_activated:
-                raise ValueError("Start time of first schedule item needs to be after the start time of the outlet schedule.")
+                raise ValueError("Start time of first schedule entry needs to be after the start time of the outlet schedule.")
             self._schedule._rampup_minutes = int((new_start_epoch - self._schedule._start_epoch()) / 60)
             # ensure there is always a whole number of minutes between the times.
             self._schedule._epoch_activated = new_start_epoch - self._schedule._rampup_minutes * 60
         else:
-            prev_item = self._schedule.entries[self._item_nr - 1]
-            if new_start_epoch < prev_item._start_epoch():
-                raise ValueError("Start time of a schedule item needs to be after the start time of the previous schedule item.")
-            prev_item._minutes_to_next_schedule_item = int((new_start_epoch - prev_item._start_epoch()) / 60)
+            prev_entry = self._schedule.entries[self._entry_nr - 1]
+            if new_start_epoch < prev_entry._start_epoch():
+                raise ValueError("Start time of a schedule entry needs to be after the start time of the previous schedule entry.")
+            prev_entry._minutes_to_next_schedule_entry = int((new_start_epoch - prev_entry._start_epoch()) / 60)
 
     @property
     def end_time(self):
-        """When this schedule item will end and the next one will start.
+        """When this schedule entry will end and the next one will start.
 
            On setting, you can't set it to a value smaller than the start time.
            On setting, the wait time is adjusted automatically.
 
            This is a time UTC tuple.
         """
-        return self._schedule._epoch_to_time(self._start_epoch() + self._minutes_to_next_schedule_item * 60)
+        return self._schedule._epoch_to_time(self._start_epoch() + self._minutes_to_next_schedule_entry * 60)
 
     @end_time.setter
     def end_time(self, new_time):
@@ -391,12 +391,12 @@ class OutletScheduleItem(object):
         if end_epoch < self._start_epoch():
             raise ValueError("End time needs to be after start time")
 
-        self.minutes_to_next_schedule_item = int((end_epoch - self._start_epoch()) / 60)
+        self.minutes_to_next_schedule_entry = int((end_epoch - self._start_epoch()) / 60)
 
     def __str__(self):
         return "switch on: " + str(self.switch_on) + \
                ", start time: " + time.strftime("%Y-%m-%d %H:%M:%S UTC", self.start_time) + \
-               ", time to next schedule item: " + _min2human(self.minutes_to_next_schedule_item) + \
+               ", time to next schedule entry: " + _min2human(self.minutes_to_next_schedule_entry) + \
                ", end time: " + time.strftime("%Y-%m-%d %H:%M:%S UTC", self.end_time)
 
 
@@ -425,7 +425,7 @@ class OutletSchedule(object):
             if value == 0x0:
                 self._periodic = False
             elif value != 0x3FFF:
-                self._entries.append(OutletScheduleItem(data[i:i + 2], self, (i - 4) / 2))
+                self._entries.append(OutletScheduleEntry(data[i:i + 2], self, (i - 4) / 2))
 
         if len(self._entries) == 0:
             self._periodic = False
@@ -476,7 +476,7 @@ class OutletSchedule(object):
 
     def _add_schedule_minutes(self, schedules):
         if len(schedules) > 0:
-            return reduce(lambda x, y: x + y, [s._minutes_to_next_schedule_item for s in schedules])
+            return reduce(lambda x, y: x + y, [s._minutes_to_next_schedule_entry for s in schedules])
         else:
             return 0
 
@@ -561,7 +561,7 @@ class OutletSchedule(object):
 
     @property
     def entries(self):
-        """List of the OutletScheduleItem objects linked with the timer.
+        """List of the OutletScheduleEntry objects linked with the timer.
 
            Do not manipulate the list itself directly (e.g. adding or removing entries) because this will lead to unpredictable results.
            Use the add_entry() and remove_entry() methods for this.
@@ -569,12 +569,12 @@ class OutletSchedule(object):
         return self._entries
 
     def add_entry(self):
-        """Add an extra OutletScheduleItem object to the list at the last position.
+        """Add an extra OutletScheduleEntry object to the list at the last position.
 
            This entry will have a length of 0 minutes.
            This entry will set the outlet off.
         """
-        new_entry = OutletScheduleItem(bytearray([0, 0]), self, len(self._entries))
+        new_entry = OutletScheduleEntry(bytearray([0, 0]), self, len(self._entries))
         self._entries.append(new_entry)
 
     def remove_entry(self):

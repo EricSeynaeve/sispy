@@ -19,9 +19,9 @@
 from SisPy.lib import _min2human
 from SisPy.lib import SisPy
 from SisPy.lib import Outlet
-from SisPy.lib import OutletCurrentScheduleItem
+from SisPy.lib import OutletCurrentScheduleEntry
 from SisPy.lib import OutletSchedule
-from SisPy.lib import OutletScheduleItem
+from SisPy.lib import OutletScheduleEntry
 
 import pytest
 import time
@@ -82,13 +82,13 @@ def device():
                 assert data_or_length == 4
                 outlet = (report_nr - 5) / 3
                 if outlet == 0:
-                    data = outlet_current_schedule_item_data_ok_off()
+                    data = outlet_current_schedule_entry_data_ok_off()
                 if outlet == 1:
-                    data = outlet_current_schedule_item_data_ok_on()
+                    data = outlet_current_schedule_entry_data_ok_on()
                 if outlet == 2:
-                    data = outlet_current_schedule_item_data_ok_off_rampup()
+                    data = outlet_current_schedule_entry_data_ok_off_rampup()
                 if outlet == 3:
-                    data = outlet_current_schedule_item_data_ok_off_done()
+                    data = outlet_current_schedule_entry_data_ok_off_done()
             # the report number is added as first byte
             data.insert(0, report_nr)
             return data
@@ -134,7 +134,7 @@ def sispy(device):
 ####
 
 @pytest.fixture
-def outlet_current_schedule_item_data_ok_off():
+def outlet_current_schedule_entry_data_ok_off():
     """Executing the first schedule (second schedule is the next one).
        Time it will still execute is 2 minutes.
        This schedule set the outlet off at it's start (status now can be different due to override)
@@ -145,7 +145,7 @@ def outlet_current_schedule_item_data_ok_off():
 
 
 @pytest.fixture
-def outlet_current_schedule_item_data_ok_off_long_time():
+def outlet_current_schedule_entry_data_ok_off_long_time():
     """Executing the first schedule (second schedule is the next one).
        Time it will still execute is a lot (0x3002).
        This schedule set the outlet off at it's start (status now can be different due to override).
@@ -156,7 +156,7 @@ def outlet_current_schedule_item_data_ok_off_long_time():
 
 
 @pytest.fixture
-def outlet_current_schedule_item_data_ok_on():
+def outlet_current_schedule_entry_data_ok_on():
     """Executing the first schedule (second schedule is the next one).
        Time it will still execute is 2 minutes.
        This schedule set the outlet on at it's start (status now can be different due to override).
@@ -167,7 +167,7 @@ def outlet_current_schedule_item_data_ok_on():
 
 
 @pytest.fixture
-def outlet_current_schedule_item_data_error_off():
+def outlet_current_schedule_entry_data_error_off():
     """Executing the first schedule (second schedule is the next one).
        Time it will still execute is 2 minutes.
        This schedule set the outlet off at it's start (status now can be different due to override).
@@ -179,7 +179,7 @@ def outlet_current_schedule_item_data_error_off():
 
 
 @pytest.fixture
-def outlet_current_schedule_item_data_ok_off_rampup():
+def outlet_current_schedule_entry_data_ok_off_rampup():
     """Still waiting to start the schedules (first schedule is the next one).
        Time it will still wait is 2 minutes.
     """
@@ -187,7 +187,7 @@ def outlet_current_schedule_item_data_ok_off_rampup():
 
 
 @pytest.fixture
-def outlet_current_schedule_item_data_ok_off_done():
+def outlet_current_schedule_entry_data_ok_off_done():
     """All schedules were executed.
        This also means that no looping was requested.
     """
@@ -278,52 +278,52 @@ def test_outlets_schedule(sispy):
 
 
 def test_outlets_current_schedule(sispy):
-    assert sispy.outlets[0].current_schedule_item._data == outlet_current_schedule_item_data_ok_off()
-    assert sispy.outlets[1].current_schedule_item._data == outlet_current_schedule_item_data_ok_on()
-    assert sispy.outlets[2].current_schedule_item._data == outlet_current_schedule_item_data_ok_off_rampup()
-    assert sispy.outlets[3].current_schedule_item._data == outlet_current_schedule_item_data_ok_off_done()
+    assert sispy.outlets[0].current_schedule_entry._data == outlet_current_schedule_entry_data_ok_off()
+    assert sispy.outlets[1].current_schedule_entry._data == outlet_current_schedule_entry_data_ok_on()
+    assert sispy.outlets[2].current_schedule_entry._data == outlet_current_schedule_entry_data_ok_off_rampup()
+    assert sispy.outlets[3].current_schedule_entry._data == outlet_current_schedule_entry_data_ok_off_done()
 
 
-# test outlet current schedule item class
+# test outlet current schedule entry class
 
-def _test_outlet_current_schedule(current_schedule, timing_error=False, switched_it_on=False, minutes_to_next_schedule_item=2,
+def _test_outlet_current_schedule(current_schedule, timing_error=False, switched_it_on=False, minutes_to_next_schedule_entry=2,
                                   current_schedule_nr=1, sequence_rampup=False, sequence_done=False):
     assert current_schedule.timing_error == timing_error
     assert current_schedule.switched_it_on == switched_it_on
-    assert current_schedule.minutes_to_next_schedule_item == minutes_to_next_schedule_item
+    assert current_schedule.minutes_to_next_schedule_entry == minutes_to_next_schedule_entry
     assert current_schedule.current_schedule_nr == current_schedule_nr
     assert current_schedule.sequence_rampup == sequence_rampup
     assert current_schedule.sequence_done == sequence_done
 
 
-def test_outlet_current_schedule_item_ok_off(outlet_current_schedule_item_data_ok_off):
-    current_schedule = OutletCurrentScheduleItem(outlet_current_schedule_item_data_ok_off)
+def test_outlet_current_schedule_entry_ok_off(outlet_current_schedule_entry_data_ok_off):
+    current_schedule = OutletCurrentScheduleEntry(outlet_current_schedule_entry_data_ok_off)
     _test_outlet_current_schedule(current_schedule)
 
 
-def test_outlet_current_schedule_item_ok_off_long_time(outlet_current_schedule_item_data_ok_off_long_time):
-    current_schedule = OutletCurrentScheduleItem(outlet_current_schedule_item_data_ok_off_long_time)
-    _test_outlet_current_schedule(current_schedule, minutes_to_next_schedule_item=12290)
+def test_outlet_current_schedule_entry_ok_off_long_time(outlet_current_schedule_entry_data_ok_off_long_time):
+    current_schedule = OutletCurrentScheduleEntry(outlet_current_schedule_entry_data_ok_off_long_time)
+    _test_outlet_current_schedule(current_schedule, minutes_to_next_schedule_entry=12290)
 
 
-def test_outlet_current_schedule_item_error_off(outlet_current_schedule_item_data_error_off):
-    current_schedule = OutletCurrentScheduleItem(outlet_current_schedule_item_data_error_off)
+def test_outlet_current_schedule_entry_error_off(outlet_current_schedule_entry_data_error_off):
+    current_schedule = OutletCurrentScheduleEntry(outlet_current_schedule_entry_data_error_off)
     _test_outlet_current_schedule(current_schedule, timing_error=True)
 
 
-def test_outlet_current_schedule_item_ok_on(outlet_current_schedule_item_data_ok_on):
-    current_schedule = OutletCurrentScheduleItem(outlet_current_schedule_item_data_ok_on)
+def test_outlet_current_schedule_entry_ok_on(outlet_current_schedule_entry_data_ok_on):
+    current_schedule = OutletCurrentScheduleEntry(outlet_current_schedule_entry_data_ok_on)
     _test_outlet_current_schedule(current_schedule, switched_it_on=True)
 
 
-def test_outlet_current_schedule_item_ok_off_rampup(outlet_current_schedule_item_data_ok_off_rampup):
-    current_schedule = OutletCurrentScheduleItem(outlet_current_schedule_item_data_ok_off_rampup)
+def test_outlet_current_schedule_entry_ok_off_rampup(outlet_current_schedule_entry_data_ok_off_rampup):
+    current_schedule = OutletCurrentScheduleEntry(outlet_current_schedule_entry_data_ok_off_rampup)
     _test_outlet_current_schedule(current_schedule, sequence_rampup=True, current_schedule_nr=None)
 
 
-def test_outlet_current_schedule_item_ok_off_done(outlet_current_schedule_item_data_ok_off_done):
-    current_schedule = OutletCurrentScheduleItem(outlet_current_schedule_item_data_ok_off_done)
-    _test_outlet_current_schedule(current_schedule, sequence_done=True, minutes_to_next_schedule_item=0, current_schedule_nr=2)
+def test_outlet_current_schedule_entry_ok_off_done(outlet_current_schedule_entry_data_ok_off_done):
+    current_schedule = OutletCurrentScheduleEntry(outlet_current_schedule_entry_data_ok_off_done)
+    _test_outlet_current_schedule(current_schedule, sequence_done=True, minutes_to_next_schedule_entry=0, current_schedule_nr=2)
 
 
 # test outlet schedule class
@@ -354,17 +354,17 @@ def test_outlet_schedule(outlet_schedule_data, sispy):
 
     entry1 = schedule.entries[0]
     assert entry1.switch_on is True
-    assert entry1.minutes_to_next_schedule_item == 3
+    assert entry1.minutes_to_next_schedule_entry == 3
     assert entry1.start_time == time.strptime('2016-01-05 17:11:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert entry1.end_time == time.strptime('2016-01-05 17:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
     entry2 = schedule.entries[1]
     assert entry2.switch_on is False
-    assert entry2.minutes_to_next_schedule_item == 2
+    assert entry2.minutes_to_next_schedule_entry == 2
     assert entry2.start_time == time.strptime('2016-01-05 17:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert entry2.end_time == time.strptime('2016-01-05 17:16:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
-    assert str(schedule) == "Time activated: 2016-01-05 17:10:35 UTC, rampup time: 1m, periodic: True, periodicity: 5m min., Entry 0: [switch on: True, start time: 2016-01-05 17:11:35 UTC, time to next schedule item: 3m, end time: 2016-01-05 17:14:35 UTC], Entry 1: [switch on: False, start time: 2016-01-05 17:14:35 UTC, time to next schedule item: 2m, end time: 2016-01-05 17:16:35 UTC]"
+    assert str(schedule) == "Time activated: 2016-01-05 17:10:35 UTC, rampup time: 1m, periodic: True, periodicity: 5m min., Entry 0: [switch on: True, start time: 2016-01-05 17:11:35 UTC, time to next schedule entry: 3m, end time: 2016-01-05 17:14:35 UTC], Entry 1: [switch on: False, start time: 2016-01-05 17:14:35 UTC, time to next schedule entry: 2m, end time: 2016-01-05 17:16:35 UTC]"
 
 
 def test_outlet_schedule_change_periodicity(outlet_schedule_data, sispy):
@@ -399,17 +399,17 @@ def test_outlet_schedule_non_periodic(outlet_schedule_data_non_periodic, sispy):
 
     entry1 = schedule.entries[0]
     assert entry1.switch_on is True
-    assert entry1.minutes_to_next_schedule_item == 3
+    assert entry1.minutes_to_next_schedule_entry == 3
     assert entry1.start_time == time.strptime('2016-01-05 17:11:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert entry1.end_time == time.strptime('2016-01-05 17:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
     entry2 = schedule.entries[1]
     assert entry2.switch_on is False
-    assert entry2.minutes_to_next_schedule_item == 2
+    assert entry2.minutes_to_next_schedule_entry == 2
     assert entry2.start_time == time.strptime('2016-01-05 17:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert entry2.end_time == time.strptime('2016-01-05 17:16:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
-    assert str(schedule) == "Time activated: 2016-01-05 17:10:35 UTC, rampup time: 1m, periodic: False, total time: 5m min., end time: 2016-01-05 17:16:35 UTC, Entry 0: [switch on: True, start time: 2016-01-05 17:11:35 UTC, time to next schedule item: 3m, end time: 2016-01-05 17:14:35 UTC], Entry 1: [switch on: False, start time: 2016-01-05 17:14:35 UTC, time to next schedule item: 2m, end time: 2016-01-05 17:16:35 UTC]"
+    assert str(schedule) == "Time activated: 2016-01-05 17:10:35 UTC, rampup time: 1m, periodic: False, total time: 5m min., end time: 2016-01-05 17:16:35 UTC, Entry 0: [switch on: True, start time: 2016-01-05 17:11:35 UTC, time to next schedule entry: 3m, end time: 2016-01-05 17:14:35 UTC], Entry 1: [switch on: False, start time: 2016-01-05 17:14:35 UTC, time to next schedule entry: 2m, end time: 2016-01-05 17:16:35 UTC]"
 
 
 def test_outlet_schedule_reset(outlet_schedule_data_reset, sispy):
@@ -453,7 +453,7 @@ def test_outlet_schedule_change_first_entry(outlet_schedule_data, sispy):
     assert schedule.time_activated == time.strptime('2016-01-05 17:12:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule.rampup_minutes == 4 * 60 + 3
     assert schedule_entry1.start_time == time.strptime('2016-01-05 21:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
-    assert schedule_entry1.minutes_to_next_schedule_item == 3
+    assert schedule_entry1.minutes_to_next_schedule_entry == 3
     assert schedule_entry1.end_time == time.strptime('2016-01-05 21:18:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule.entries[1].start_time == time.strptime('2016-01-05 21:18:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
     with pytest.raises(TypeError):
@@ -461,28 +461,28 @@ def test_outlet_schedule_change_first_entry(outlet_schedule_data, sispy):
     assert schedule_entry1.start_time == time.strptime('2016-01-05 21:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule_entry1._construct_data() == bytearray([0x3, 0x80])
 
-    schedule_entry1.minutes_to_next_schedule_item = 8 * 60
+    schedule_entry1.minutes_to_next_schedule_entry = 8 * 60
     assert schedule.time_activated == time.strptime('2016-01-05 17:12:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule.rampup_minutes == 4 * 60 + 3
     assert schedule_entry1.start_time == time.strptime('2016-01-05 21:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
-    assert schedule_entry1.minutes_to_next_schedule_item == 8 * 60
+    assert schedule_entry1.minutes_to_next_schedule_entry == 8 * 60
     assert schedule_entry1.end_time == time.strptime('2016-01-06 05:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule.entries[1].start_time == time.strptime('2016-01-06 05:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule_entry1._construct_data() == bytearray([0xE0, 0x81])
 
     with pytest.raises(TypeError):
-        schedule_entry1.minutes_to_next_schedule_item = 'abc'
-    assert schedule_entry1.minutes_to_next_schedule_item == 8 * 60
+        schedule_entry1.minutes_to_next_schedule_entry = 'abc'
+    assert schedule_entry1.minutes_to_next_schedule_entry == 8 * 60
     with pytest.raises(ValueError):
-        schedule_entry1.minutes_to_next_schedule_item = -1
-    assert schedule_entry1.minutes_to_next_schedule_item == 8 * 60
+        schedule_entry1.minutes_to_next_schedule_entry = -1
+    assert schedule_entry1.minutes_to_next_schedule_entry == 8 * 60
     with pytest.raises(ValueError):
-        schedule_entry1.minutes_to_next_schedule_item = 0xFFFF
-    assert schedule_entry1.minutes_to_next_schedule_item == 8 * 60
+        schedule_entry1.minutes_to_next_schedule_entry = 0xFFFF
+    assert schedule_entry1.minutes_to_next_schedule_entry == 8 * 60
 
     schedule_entry1.end_time = time.strptime('2016-01-05 21:25:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule_entry1.start_time == time.strptime('2016-01-05 21:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
-    assert schedule_entry1.minutes_to_next_schedule_item == 10
+    assert schedule_entry1.minutes_to_next_schedule_entry == 10
     assert schedule_entry1.end_time == time.strptime('2016-01-05 21:25:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule.entries[1].start_time == time.strptime('2016-01-05 21:25:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule_entry1._construct_data() == bytearray([0x0A, 0x80])
@@ -526,23 +526,23 @@ def test_outlet_schedule_change_second(outlet_schedule_data, sispy):
     schedule_entry2.start_time = time.strptime('2016-01-05 21:15:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule.time_activated == time.strptime('2016-01-05 17:10:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule.entries[0].start_time == time.strptime('2016-01-05 17:11:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
-    assert schedule.entries[0].minutes_to_next_schedule_item == 4 * 60 + 3
+    assert schedule.entries[0].minutes_to_next_schedule_entry == 4 * 60 + 3
     assert schedule.entries[0].end_time == time.strptime('2016-01-05 21:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule_entry2.start_time == time.strptime('2016-01-05 21:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
-    assert schedule_entry2.minutes_to_next_schedule_item == 2
+    assert schedule_entry2.minutes_to_next_schedule_entry == 2
     assert schedule_entry2.end_time == time.strptime('2016-01-05 21:16:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     with pytest.raises(ValueError):
         schedule_entry2.start_time = time.strptime('2016-01-05 17:11:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule_entry2.start_time == time.strptime('2016-01-05 21:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
-    schedule_entry2.minutes_to_next_schedule_item = 8 * 60
+    schedule_entry2.minutes_to_next_schedule_entry = 8 * 60
     assert schedule_entry2.start_time == time.strptime('2016-01-05 21:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
-    assert schedule_entry2.minutes_to_next_schedule_item == 8 * 60
+    assert schedule_entry2.minutes_to_next_schedule_entry == 8 * 60
     assert schedule_entry2.end_time == time.strptime('2016-01-06 05:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
     schedule_entry2.end_time = time.strptime('2016-01-05 21:25:15 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert schedule_entry2.start_time == time.strptime('2016-01-05 21:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
-    assert schedule_entry2.minutes_to_next_schedule_item == 10
+    assert schedule_entry2.minutes_to_next_schedule_entry == 10
     assert schedule_entry2.end_time == time.strptime('2016-01-05 21:24:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
 
@@ -556,7 +556,7 @@ def test_outlet_schedule_entry_add(outlet_schedule_data, sispy):
     schedule_entry3 = schedule.entries[2]
     assert schedule_entry3.switch_on is False
     assert schedule_entry3.start_time == schedule_entry2.end_time
-    assert schedule_entry3.minutes_to_next_schedule_item == 0
+    assert schedule_entry3.minutes_to_next_schedule_entry == 0
     assert schedule_entry3.end_time == schedule_entry2.end_time
 
 
@@ -569,7 +569,7 @@ def test_outlet_schedule_entry_remove(outlet_schedule_data, sispy):
     # make sure we removed the correct one ;-)
     entry1 = schedule.entries[0]
     assert entry1.switch_on is True
-    assert entry1.minutes_to_next_schedule_item == 3
+    assert entry1.minutes_to_next_schedule_entry == 3
     assert entry1.start_time == time.strptime('2016-01-05 17:11:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
     assert entry1.end_time == time.strptime('2016-01-05 17:14:35 UTC', '%Y-%m-%d %H:%M:%S %Z')
 
