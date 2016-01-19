@@ -1,16 +1,21 @@
 # sispy
-Python library for working with the Gembird Energenie PMS2 power strip, including programming the hardware schedules.
 
-After receiving the EG-PMS2, I found out wines does not support USB drivers. The apps I found (didn't find egpms_ctl till much later) didn't support the hardware schedule.
+Python library for working with the Gembird Energenie PMS2 power switch, including programming the hardware schedules.
 
-When contacting the distributor, they provided me with some information on programming the hardware schedules. Using this + some revers engineering (the doc obtained contained some errors), I managed to come up with a, IMHO, intuitive python library.
+After receiving the EG-PMS2, I found out wine does not support USB drivers. The apps I found (didn't find egpms_ctl till much later) didn't support the hardware schedule.
+
+When contacting the distributor, they provided me with some information on programming the hardware schedules. Using information + some reverse engineering (the doc obtained contained some errors), I managed to come up with a, IMHO, intuitive python library.
+
+## Dependencies
+
+Requires the pyusb library for working with the power switch through USB. The advantage of pyusb is that you don't have to worry which particular USB library is installed (libusb 0.1, libusb 1.0, libusbx, libusb-win32 or OpenUSB).
 
 ## Usage example
 
-Before running this example, make sure the power strip is connected to the computer.
+Before running this example, make sure the power switch is connected to the computer.
 
 ```python
-from SisPy import SisPy
+from SisPy.lib import SisPy
 
 sispy = SisPy()
 
@@ -45,6 +50,7 @@ my_schedule.apply()
 
 - only tested on the USB version EG-PMS2
 - all times are entered and received in UTC !
+- will only take the first power switch found in the USB devices walk through.
 
 ## See also:
 
