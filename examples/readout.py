@@ -22,6 +22,8 @@ for i in range(4):
         print "  Current schedule entry:"
         schedule_nr = current_entry.current_schedule_nr
         if schedule_nr is not None:
+            if current_entry.timing_error is True:
+                print "      SCHEDULE ERROR DETECTED !!"
             print "      Switched on at start ?  " + str(current_entry.switched_it_on)
             print "      # of current entry:     " + str(current_entry.current_schedule_nr)
             print "      Start of current entry: " + time.strftime("%Y-%m-%d %H:%M:%S UTC", outlet.schedule.entries[current_entry.current_schedule_nr].start_time)
