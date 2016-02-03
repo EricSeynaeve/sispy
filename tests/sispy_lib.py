@@ -646,4 +646,17 @@ def test_outlet_schedule_apply_data(sispy, outlet_schedule_data):
     assert sispy._dev.send_data == bytearray([0x04]) + outlet_schedule_data
 
 
+def test_outlet_schedule_apply_data_from_past(sispy, outlet_schedule_data):
+    schedule = sispy.outlets[0].schedule
+
+    # add 2 minutes to the start time of the first schedule
+    begin_time = schedule.entries[0].start_time
+    new_begin_time = time.gmtime(calendar.timegm(begin_time) + 2*60)
+    schedule._get_current_time = lambda: new_begin_time
+
+    schedule.apply()
+    assert sispy._dev.send_meta == bytearray([0x21, 0x09, 0x04, 0x03, 0x00])
+    assert sispy._dev.send_data == bytearray([0x04]) + outlet_schedule_data
+
+
 # vim: set ai tabstop=4 shiftwidth=4 expandtab :
