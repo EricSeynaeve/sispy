@@ -37,9 +37,9 @@ def on_off_one_day_sun_schedule(sun_time_on, sun_time_off, outlet):
     today_on_time[5] = sun_time_on[2]
     # convert to epoch and adjust from local time to UTC
     if time.daylight == 1:
-        today_on_epoch = time.mktime(today_on_time) - time.altzone
+        today_on_epoch = time.mktime(tuple(today_on_time)) - time.altzone
     else:
-        today_on_epoch = time.mktime(today_on_time) - time.timezone
+        today_on_epoch = time.mktime(tuple(today_on_time)) - time.timezone
     # adjust to sun time
     today_on_epoch = today_on_epoch - (hours_from_sun * 3600 + minutes_from_sun * 60)
     # convert sun epoch to UTC tuple
@@ -52,9 +52,9 @@ def on_off_one_day_sun_schedule(sun_time_on, sun_time_off, outlet):
     today_off_time[5] = sun_time_off[2]
     # convert to epoch and adjust from local time to UTC
     if time.daylight == 1:
-        today_off_epoch = time.mktime(today_off_time) - time.altzone
+        today_off_epoch = time.mktime(tuple(today_off_time)) - time.altzone
     else:
-        today_off_epoch = time.mktime(today_off_time) - time.timezone
+        today_off_epoch = time.mktime(tuple(today_off_time)) - time.timezone
     # adjust to sun time
     today_off_epoch = today_off_epoch - (hours_from_sun * 3600 + minutes_from_sun * 60)
     # convert sun epoch to UTC tuple

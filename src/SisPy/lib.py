@@ -62,7 +62,7 @@ class SisPy(object):
         if devs is None:
             print("No Energenie products found")
             sys.exit(0)
-        return devs.next()
+        return next(devs)
 
     def _usb_read(self, command, outlet_nr=None):
         request_type = 0xa1
@@ -425,7 +425,7 @@ class OutletSchedule(object):
             if value == 0x0:
                 self._periodic = False
             elif value != 0x3FFF:
-                self._entries.append(OutletScheduleEntry(data[i:i + 2], self, (i - 4) / 2))
+                self._entries.append(OutletScheduleEntry(data[i:i + 2], self, int((i - 4) / 2)))
 
         if len(self._entries) == 0:
             self._periodic = False
@@ -476,7 +476,11 @@ class OutletSchedule(object):
 
     def _add_schedule_minutes(self, schedules):
         if len(schedules) > 0:
-            return reduce(lambda x, y: x + y, [s._minutes_to_next_schedule_entry for s in schedules])
+            min_to_next_schedule = 0
+            for s in schedules:
+                min_to_next_schedule = min_to_next_schedule + s._minutes_to_next_schedule_entry
+
+            return min_to_next_schedule
         else:
             return 0
 
