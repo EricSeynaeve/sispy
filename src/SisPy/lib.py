@@ -325,8 +325,8 @@ class OutletScheduleEntry(object):
         if isinstance(new_minutes, int):
             if new_minutes < 0:
                 raise ValueError("Can't set a number of minutes < 0")
-            if new_minutes > 0x3FF:
-                raise ValueError("Number of minutes to set too big (> 16383 (~ 273+ hourse or ~ 11+ days))")
+            if new_minutes > 0x3FFF:
+                raise ValueError("Number of minutes to set too big (> 16383 (~ 273+ hours or ~ 11+ days))")
 
             self._minutes_to_next_schedule_entry = new_minutes
         else:
